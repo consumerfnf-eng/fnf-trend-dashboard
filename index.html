@@ -3047,20 +3047,39 @@ renderHealth();
 
   const LP=["fit","pattern","insulation","construction","surface_finish","collar","neckline","closure","sleeve_shape","decoration","waist_rise","sleeve_length","hem_length"];
   const BASEFIX={'Short':'Short Puffer','Long':'Long Puffer','Heavy':'Heavy Puffer','Lightweight':'Light Puffer'};
-  function trendLabel(detailsStr,base){
-    let d={};try{d=JSON.parse(detailsStr||'{}');}catch(e){}
-    const bn=base.toLowerCase(),picks=[];
-    for(const ax of LP){
-      if(picks.length>=2)break;
-      if(!(ax in d))continue;
+  function simpMat(r){
+    let raw=(r&&(r.material_hints||r.fabric))||'';
+    try{const a=JSON.parse(raw);if(Array.isArray(a))raw=a[0]||'';}catch(e){}
+    const t=String(raw).toLowerCase();
+    if(t.includes('denim'))return 'Denim';
+    if(t.includes('leather'))return 'Leather';
+    if(t.includes('suede'))return 'Suede';
+    if(t.includes('wool')||t.includes('cashmere'))return 'Wool';
+    if(t.includes('fleece'))return 'Fleece';
+    if(t.includes('corduroy')||t.includes('cord'))return 'Corduroy';
+    if(t.includes('velvet'))return 'Velvet';
+    if(t.includes('linen'))return 'Linen';
+    if(t.includes('canvas'))return 'Canvas';
+    if(t.includes('knit')||t.includes('rib'))return 'Knit';
+    if(t.includes('tech')||t.includes('poly')||t.includes('nylon'))return 'Tech';
+    if(t.includes('cotton')||t.includes('jersey'))return 'Cotton';
+    return '';
+  }
+  const SHAPEAX={BOTTOM:['fit','waist_rise'],TOP:['sleeve_length','neckline','collar'],OUTERWEAR:['insulation','surface_finish','collar'],DRESS:['sleeve_length','neckline'],BAG:['surface_finish'],HAT:[],SHOES:['surface_finish']};
+  function trendLabel(r, base, cat){
+    let d={};try{d=JSON.parse((r&&r.details)||'{}');}catch(e){}
+    const bn=base.toLowerCase(),toks=[];
+    const axes=SHAPEAX[cat]||['fit','surface_finish'];
+    for(const ax of axes){
       let v=d[ax];v=Array.isArray(v)?v[0]:v;if(!v)continue;
-      v=String(v).replace(/ Fit$/,'');
-      const vn=v.toLowerCase();
+      v=String(v).replace(/ Fit$/,'');const vn=v.toLowerCase();
+      if(vn==='solid'||vn==='none'||vn==='regular')continue;
       if(bn.includes(vn.split(' ')[0]))continue;
-      if(picks.some(p=>p.toLowerCase()===vn))continue;
-      picks.push(v);
+      toks.push(v);break;
     }
-    return picks.length?picks.join(' ')+' '+base:base;
+    const mat=simpMat(r||{});
+    if(mat&&!bn.includes(mat.toLowerCase())&&!toks.some(t=>t.toLowerCase()===mat.toLowerCase()))toks.push(mat);
+    return toks.length?toks.join(' ')+' '+base:base;
   }
 
   function build(){
@@ -3087,10 +3106,11 @@ renderHealth();
         return;
       }
       hasA=true;catA[cat]=(catA[cat]||0)+w;
-      let base=PROP.level==='sub2'?((r.sub2||'').trim()||(r.sub_category||'').trim()):(r.sub_category||'').trim();
+      const LV=window.OV_LEVEL||'sub2';
+      let base=LV==='sub_category'?((r.sub_category||'').trim()||(r.sub2||'').trim()):((r.sub2||'').trim()||(r.sub_category||'').trim());
       if(!base)return;   // 빈 라벨(–) 제외
-      if((r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
-      const label=trendLabel(r.details,base);
+      if(LV==='detail'&&(r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
+      const label=LV==='detail'?trendLabel(r,base,cat):base;
       const key=cat+'|'+label;
       if(!AB.has(key))AB.set(key,{cat,label,a:0,det:new Map()});
       const b=AB.get(key);b.a+=w;
@@ -3148,8 +3168,9 @@ renderHealth();
     let html=fileList+`<div class="pp-ctrl">
       <div class="pp-grp"><span class="pp-lbl">Category</span>${catChips}</div>
       <div class="pp-grp"><span class="pp-lbl">Level</span>
-        <span class="chip ${PROP.level==='sub_category'?'on':''}" data-pp="level" data-v="sub_category">sub-cat</span>
-        <span class="chip ${PROP.level==='sub2'?'on':''}" data-pp="level" data-v="sub2">sub2</span></div>
+        <span class="chip ${(window.OV_LEVEL||'sub2')==='sub_category'?'on':''}" data-pp="level" data-v="sub_category">Category</span>
+        <span class="chip ${(window.OV_LEVEL||'sub2')==='sub2'?'on':''}" data-pp="level" data-v="sub2">Item</span>
+        <span class="chip ${(window.OV_LEVEL||'sub2')==='detail'?'on':''}" data-pp="level" data-v="detail">Detail</span></div>
     </div>`;
     const srcNote=M.hasA&&M.hasS?'TREND (actual) + WGSN signal overlay':M.hasA?'TREND only — add WGSN CSV to overlay signals':'signal only';
     html+=`<div class="pp-banner"><span class="pp-season">${esc(PROP.season||'—')}</span><span class="pp-seasontag">proposal</span>
@@ -3205,7 +3226,7 @@ renderHealth();
 
   inner.addEventListener('click',e=>{
     const rm=e.target.closest('[data-frm]'); if(rm){PROP.files.splice(+rm.dataset.frm,1);render();return;}
-    const c=e.target.closest('[data-pp]');if(!c)return;const t=c.dataset.pp;if(t==='season')PROP.season=c.dataset.v;if(t==='cat')PROP.category=c.dataset.v;if(t==='level')PROP.level=c.dataset.v;render();});
+    const c=e.target.closest('[data-pp]');if(!c)return;const t=c.dataset.pp;if(t==='season')PROP.season=c.dataset.v;if(t==='cat')PROP.category=c.dataset.v;if(t==='level'){PROP.level=c.dataset.v;window.OV_LEVEL=c.dataset.v;if(window.OV_SYNC)window.OV_SYNC();}render();});
   inner.addEventListener('change',e=>{
     if(e.target.dataset.fseason!==undefined){PROP.files[+e.target.dataset.fseason].season=e.target.value;render();return;}
     if(e.target.dataset.flayer!==undefined){PROP.files[+e.target.dataset.flayer].layer=e.target.value;render();return;}
@@ -3265,10 +3286,10 @@ renderHealth();
   #imagesInner .ib-sel{font-family:var(--mono);font-size:8px;padding:2px 3px;border:.5px solid var(--line);border-radius:4px;background:#fff;color:var(--ink-2);max-width:100%}
   #imagesInner .ib-apply{font-family:var(--mono);font-size:8px;padding:3px 0;border:none;border-radius:4px;background:var(--accent);color:#fff;cursor:pointer;margin-top:1px}
   #imagesInner .ib-btn2{opacity:.6;font-size:10px}
-  #overviewInner .ov-levels{display:flex;align-items:center;gap:6px;margin:-6px 0 14px}
-  #overviewInner .ov-lvllbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-right:2px}
-  #overviewInner .ov-lvl{font-family:var(--mono);font-size:10px;padding:4px 11px;border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--ink-2)}
-  #overviewInner .ov-lvl.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .ov-levels{display:flex;align-items:center;gap:6px;margin:-6px 0 14px}
+  .ov-lvllbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-right:2px}
+  .ov-lvl{font-family:var(--mono);font-size:10px;padding:4px 11px;border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--ink-2)}
+  .ov-lvl.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   #overviewInner .ov-tag{font-family:var(--mono);font-size:9px;color:#fff;background:var(--accent);border-radius:999px;padding:1px 8px}
   .ovt .traj{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
   .ovt .cast{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:10px;margin-right:7px}
@@ -3312,21 +3333,60 @@ renderHealth();
   function toObj(g){if(!g.length)return[];const h=g[0].map(x=>x.trim());return g.slice(1).filter(r=>r.length>1).map(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]!==undefined?r[i]:'');return o;});}
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function srcKey(s){return (s||'').toLowerCase();}
-  function trendLabel(detailsStr,base){
-    let d={};try{d=JSON.parse(detailsStr||'{}');}catch(e){}
-    const bn=base.toLowerCase(),picks=[];
-    for(const ax of LP){if(picks.length>=2)break;if(!(ax in d))continue;let v=d[ax];v=Array.isArray(v)?v[0]:v;if(!v)continue;v=String(v).replace(/ Fit$/,'');const vn=v.toLowerCase();if(vn==='solid'||vn==='none')continue;if(bn.includes(vn.split(' ')[0]))continue;if(picks.some(p=>p.toLowerCase()===vn))continue;picks.push(v);}
-    return picks.length?picks.join(' ')+' '+base:base;
+  // 소재 단순화
+  function simpMat(r){
+    let raw=r.material_hints||r.fabric||'';
+    try{const a=JSON.parse(raw);if(Array.isArray(a))raw=a[0]||'';}catch(e){}
+    const t=String(raw).toLowerCase();
+    if(t.includes('denim'))return 'Denim';
+    if(t.includes('leather'))return 'Leather';
+    if(t.includes('suede'))return 'Suede';
+    if(t.includes('wool')||t.includes('cashmere'))return 'Wool';
+    if(t.includes('fleece'))return 'Fleece';
+    if(t.includes('corduroy')||t.includes('cord'))return 'Corduroy';
+    if(t.includes('velvet'))return 'Velvet';
+    if(t.includes('linen'))return 'Linen';
+    if(t.includes('canvas'))return 'Canvas';
+    if(t.includes('knit')||t.includes('rib'))return 'Knit';
+    if(t.includes('tech')||t.includes('poly')||t.includes('nylon'))return 'Tech';
+    if(t.includes('cotton')||t.includes('jersey'))return 'Cotton';
+    return '';
+  }
+  // 카테고리별 형태/디테일 축 우선순위 (1개 선택)
+  const SHAPEAX={
+    BOTTOM:['fit','waist_rise'], TOP:['sleeve_length','neckline','collar'],
+    OUTERWEAR:['insulation','surface_finish','collar'], DRESS:['sleeve_length','neckline'],
+    BAG:['surface_finish'], HAT:[], SHOES:['surface_finish']
+  };
+  function trendLabel(r, base, cat){
+    let d={};try{d=JSON.parse((r&&r.details)||'{}');}catch(e){}
+    const bn=base.toLowerCase(), toks=[];
+    // 1) 형태/디테일 1개 (카테고리 우선축)
+    const axes=SHAPEAX[cat]||['fit','surface_finish'];
+    for(const ax of axes){
+      let v=d[ax];v=Array.isArray(v)?v[0]:v;if(!v)continue;
+      v=String(v).replace(/ Fit$/,'');const vn=v.toLowerCase();
+      if(vn==='solid'||vn==='none'||vn==='regular')continue;
+      if(bn.includes(vn.split(' ')[0]))continue;
+      toks.push(v);break;
+    }
+    // 2) 소재 1개 (품목명에 없으면)
+    const mat=simpMat(r||{});
+    if(mat && !bn.includes(mat.toLowerCase()) && !toks.some(t=>t.toLowerCase()===mat.toLowerCase()))
+      toks.push(mat);
+    return toks.length?toks.join(' ')+' '+base:base;
   }
 
   let OV_CAT='ALL', OV_LEVEL='sub2', OV_GENDER='ALL';
+  window.OV_LEVEL=OV_LEVEL;
+  window.OV_SYNC=function(){OV_LEVEL=window.OV_LEVEL||'sub2';if(hasData())renderAll();};
   // 인스타 사진별 성별 수정 저장 (dedup_hash -> '남자'); 기본은 여자
   window.GENDER_OV=window.GENDER_OV||{};
   const GENDER_OV=window.GENDER_OV;
   // 사진별 수정(제외/분류) 저장: key -> {x:true=제외, cat, sub1, sub2}
   window.EDIT_OV=window.EDIT_OV||{};
   const EDIT_OV=window.EDIT_OV;
-  const TAXONOMY={"Outer": {"Padding / Down": ["Long", "Heavy", "Lightweight", "Short"], "Jacket": ["Bomber / Varsity", "Blouson / Ma-1", "Leather Jacket", "Denim Jacket", "Coach Jacket / Skacket", "Woven Jacket", "Trucker / Workwear", "Blazer", "Safari Jacket / Field Jacket", "Parka", "Cardigan"], "Coat": ["Single / Double Overcoat", "Overcoat", "Trench Coat", "Duffle", "Peacoat", "Cape / Poncho"], "Active": ["Shell Jacket", "Gore-tex Jacket", "Fleece", "Track Jacket", "Windbreaker / Woven jacket", "Anorak", "Training / Track", "Zip-up Hoodie", "Ski Jacket"], "Warm-up & Heavy": ["Mustang", "Fur Jacket", "Teddy Bear Coat", "Faux Fur Coat", "Shearling Jacket", "Cardigan"], "Vest": ["Padded Vest", "Active Vest", "Utility Vest", "Fleece Vest"]}, "Top": {"Sweat / Hood": ["Hoodie", "Sweatshirts (MTM)", "Half-zip Sweat"], "T-shirts": ["Short Sleeve", "Long Sleeve", "Polo Shirts", "Henley", "Crop Top", "Rugby Shirt", "Graphic t-shirts"], "Shirts / Blouse": ["Shirts", "Blouse", "Tunic"], "Knitwear": ["Sweater / Knit Top", "Sweater Zip-up", "Vest", "Summer Knit", "Twin-set", "Polo Knit", "Turtleneck / Mock-neck"], "Tank / Bra top": ["Tank Top", "Camisole / Sleeveless", "Halter Top", "Tube Top", "Bodysuit", "Bandeau / Bustier / Corset", "Sports Bra / Bra tank"]}, "Bottom": {"Pants": ["Sweat Pants", "Baggy Pants", "Track Pants", "Low-rise pants", "Flare Pants", "Wide Pants", "Cargo Pants", "Cotton Pants", "Capri Pants", "Chino Pants", "Tapered Pants", "Skinny Pants", "Culottes", "Denim Pants", "Trousers"], "Shorts": ["Sweat Shorts", "Bermuda Shorts", "Baggy Shorts", "Track Shorts", "Culotte Shorts", "Tailored Shorts", "Boxer Shorts", "Running Shorts", "Denim Shorts"], "Skirt / Skort": ["A Line Skirt", "Asymmetrical Skirt", "Balloon / Bubble Skirt", "Cargo Skirt", "Low-rise Skirt", "Flare Skirt", "H Line Skirt", "Handkerchief Skirt", "Memaid Skirt", "Pencil Skirt", "Pleated Skirt", "Ruffle Skirt", "Slit Skirt", "Tiered Skirt", "Tulip Skirt", "Tutu Skirt", "Wrap Skirt", "Denim Skirt", "Skorts", "Other Skirts"], "Leggings": ["Biker Shorts", "Flare Leggings"]}, "Onepiece": {"Casual / Daily Dress": ["Blouson Dress", "Collar Dress", "Hoodie Dress", "Shift Dress", "Shirt / T-shirt / Tank dress", "Overalls / Jumpsuit"], "Knit": ["Sweater / Cardigan", "Crochet Dress", "Ribbed Dress"], "Feminine": ["Apron Dress", "Babydoll Dress", "Backless Dress", "Blazer Dress", "Bodycon / Sheath", "Wrap Dress", "Party / Evening / Cocktail", "Velvet / Sequin Dress"]}, "Swimwear": {"Top": ["Rash Guards", "Water t-shirt"], "Bottom": ["Long", "Shorts", "Skirt"], "One-piece": ["Monokini", "Cover Ups"], "Bikinis & Set": ["Bikini Top", "Bikini Bottom"]}, "Shoes": {"Sneakers": ["Lifestyle Sneakers", "Ballerina Shoes", "Baseball Cleats", "Running Shoes", "Low-profile", "Outdoor / Hiking Shoes", "Boxing Boots", "Football Shoes", "Cycling Shoes", "Golf Shoes", "Tennis / Court / Flat", "Slip-on", "Dunk Sneakers", "Canvas Shoes", "Basketball Shoes", "Climbing Shoes"], "Flat / Heels": ["Boat Shoes", "Dress Shoes", "Espadrilles", "Loafers", "Moccasins", "Pumps", "Slingback Shoes", "Wedge Heels"], "Sandals / Slides": ["Mary Janes", "Clogs / Mules", "Flip Flops", "Slide Sandals", "Sports & Active Sandals", "Slippers", "Gladiator Sandals", "Jelly Shoes", "Aqua Shoes"], "Boots": ["Chelsea Boots", "Riding Boots", "Chukka Boots", "Chunky Boots", "Cowboy Boots", "Lace-up Boots", "Rain Boots", "Puffer Boots", "Ugg Boots", "Ski / Snowboard Boots", "Fur-lined Shoes"]}, "Hat": {"Caps": ["Baseball Cap", "Camp Cap", "Snapback", "Mesh Cap", "Trucker Hat", "Running Cap", "Hunting Cap", "Flat Cap", "Newsboy Cap"], "Beanie / Soft": ["Beanie", "Balaclava", "Beret and Tam Hat"], "Brimmed Hats": ["Bucket Hat", "Fedora", "Sun Cap", "Bonnet"], "Seasonal": ["Trapper Hat", "Earflap / Trooper Hat", "Earmuffs", "Fur Hat"], "ACC": ["Bandana", "Hairband / Headband"]}, "Bag": {"Shoulder Bag": ["Shoulder Bag", "Hobo Bag", "Baguette", "Barrel Bag", "Moon Bag", "Boston Bag", "Bowling Bag", "Duffle / Gym Bag"], "Tote bag": ["Tote Bag", "Briefcase", "Bucket Bag", "Satchel Bag", "Eco Bag"], "Crossbody Bag": ["Messenger Bag", "Sling Bag", "Belt Bag", "Camera Bag", "Saddle Bag", "Pouch"], "Backpacks": ["Mini Backpack", "Casual Backpack", "Outdoor Backpack", "Racket Bag", "Gym Sack"], "Seasonal": ["Raffia Bag", "Net & Mesh Bag", "PVC Bag", "Padded & Quilted Bag", "Fur & Shearling Bag"]}};
+  const TAXONOMY={"Outer": {"Padding / Down": ["Heavy Down", "Light Down"], "Jacket": ["Bomber / Varsity", "Blouson / Ma-1", "Leather Jacket", "Denim Jacket", "Coach Jacket / Skacket", "Woven Jacket", "Trucker / Workwear", "Blazer", "Safari Jacket / Field Jacket", "Parka", "Cardigan", "Shirt Jacket", "Other Jacket"], "Coat": ["Single / Double Overcoat", "Overcoat", "Trench Coat", "Duffle", "Peacoat", "Cape / Poncho", "Tailored Coat"], "Active": ["Shell Jacket", "Gore-tex Jacket", "Fleece", "Track Jacket", "Windbreaker / Woven jacket", "Anorak", "Training / Track", "Zip-up Hoodie", "Ski Jacket", "3L Shell"], "Warm-up & Heavy": ["Mustang", "Fur Jacket", "Teddy Bear Coat", "Faux Fur Coat", "Shearling Jacket", "Cardigan"], "Vest": ["Padded Vest", "Active Vest", "Utility Vest", "Fleece Vest"]}, "Top": {"Sweat / Hood": ["Hoodie", "Sweatshirts (MTM)", "Half-zip Sweat"], "T-shirts": ["Short Sleeve", "Long Sleeve", "Polo Shirts", "Henley", "Crop Top", "Rugby Shirt", "Graphic t-shirts"], "Shirts / Blouse": ["Shirts", "Blouse", "Tunic"], "Knitwear": ["Sweater / Knit Top", "Sweater Zip-up", "Vest", "Summer Knit", "Twin-set", "Polo Knit", "Turtleneck / Mock-neck"], "Tank / Bra top": ["Tank Top", "Camisole / Sleeveless", "Halter Top", "Tube Top", "Bodysuit", "Bandeau / Bustier / Corset", "Sports Bra / Bra tank"]}, "Bottom": {"Pants": ["Sweat Pants", "Baggy Pants", "Track Pants", "Low-rise pants", "Flare Pants", "Wide Pants", "Cargo Pants", "Cotton Pants", "Capri Pants", "Chino Pants", "Tapered Pants", "Skinny Pants", "Culottes", "Denim Pants", "Trousers"], "Shorts": ["Sweat Shorts", "Bermuda Shorts", "Baggy Shorts", "Track Shorts", "Culotte Shorts", "Tailored Shorts", "Boxer Shorts", "Running Shorts", "Denim Shorts"], "Skirt / Skort": ["A Line Skirt", "Asymmetrical Skirt", "Balloon / Bubble Skirt", "Cargo Skirt", "Low-rise Skirt", "Flare Skirt", "H Line Skirt", "Handkerchief Skirt", "Memaid Skirt", "Pencil Skirt", "Pleated Skirt", "Ruffle Skirt", "Slit Skirt", "Tiered Skirt", "Tulip Skirt", "Tutu Skirt", "Wrap Skirt", "Denim Skirt", "Skorts", "Other Skirts"], "Leggings": ["Biker Shorts", "Flare Leggings"]}, "Onepiece": {"Casual / Daily Dress": ["Blouson Dress", "Collar Dress", "Hoodie Dress", "Shift Dress", "Shirt / T-shirt / Tank dress", "Overalls / Jumpsuit"], "Knit": ["Sweater / Cardigan", "Crochet Dress", "Ribbed Dress"], "Feminine": ["Apron Dress", "Babydoll Dress", "Backless Dress", "Blazer Dress", "Bodycon / Sheath", "Wrap Dress", "Party / Evening / Cocktail", "Velvet / Sequin Dress"]}, "Swimwear": {"Top": ["Rash Guards", "Water t-shirt"], "Bottom": ["Long", "Shorts", "Skirt"], "One-piece": ["Monokini", "Cover Ups"], "Bikinis & Set": ["Bikini Top", "Bikini Bottom"]}, "Shoes": {"Sneakers": ["Lifestyle Sneakers", "Ballerina Shoes", "Baseball Cleats", "Running Shoes", "Low-profile", "Outdoor / Hiking Shoes", "Boxing Boots", "Football Shoes", "Cycling Shoes", "Golf Shoes", "Tennis / Court / Flat", "Slip-on", "Dunk Sneakers", "Canvas Shoes", "Basketball Shoes", "Climbing Shoes"], "Flat / Heels": ["Boat Shoes", "Dress Shoes", "Espadrilles", "Loafers", "Moccasins", "Pumps", "Slingback Shoes", "Wedge Heels"], "Sandals / Slides": ["Mary Janes", "Clogs / Mules", "Flip Flops", "Slide Sandals", "Sports & Active Sandals", "Slippers", "Gladiator Sandals", "Jelly Shoes", "Aqua Shoes"], "Boots": ["Chelsea Boots", "Riding Boots", "Chukka Boots", "Chunky Boots", "Cowboy Boots", "Lace-up Boots", "Rain Boots", "Puffer Boots", "Ugg Boots", "Ski / Snowboard Boots", "Fur-lined Shoes"]}, "Hat": {"Caps": ["Baseball Cap", "Camp Cap", "Snapback", "Mesh Cap", "Trucker Hat", "Running Cap", "Hunting Cap", "Flat Cap", "Newsboy Cap"], "Beanie / Soft": ["Beanie", "Balaclava", "Beret and Tam Hat"], "Brimmed Hats": ["Bucket Hat", "Fedora", "Sun Cap", "Bonnet"], "Seasonal": ["Trapper Hat", "Earflap / Trooper Hat", "Earmuffs", "Fur Hat"], "ACC": ["Bandana", "Hairband / Headband"]}, "Bag": {"Shoulder Bag": ["Shoulder Bag", "Hobo Bag", "Baguette", "Barrel Bag", "Moon Bag", "Boston Bag", "Bowling Bag", "Duffle / Gym Bag"], "Tote bag": ["Tote Bag", "Briefcase", "Bucket Bag", "Satchel Bag", "Eco Bag"], "Crossbody Bag": ["Messenger Bag", "Sling Bag", "Belt Bag", "Camera Bag", "Saddle Bag", "Pouch"], "Backpacks": ["Mini Backpack", "Casual Backpack", "Outdoor Backpack", "Racket Bag", "Gym Sack"], "Seasonal": ["Raffia Bag", "Net & Mesh Bag", "PVC Bag", "Padded & Quilted Bag", "Fur & Shearling Bag"]}};
   function rowKey(r){return r.dedup_hash||r.item_keyword||'';}
   // 수정 적용된 유효 분류 반환 (제외 여부 포함)
   function eff(r){
@@ -3362,8 +3422,8 @@ renderHealth();
       const sub2=ef.sub2,sub1=ef.sub_category;
       let base=OV_LEVEL==='sub_category'?(sub1||sub2):(sub2||sub1);
       if(!base)return;                       // 빈 라벨(– ) 제외
-      if(OV_LEVEL!=='sub_category'&&(r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
-      const label=OV_LEVEL==='sub_category'?base:trendLabel(r.details,base);
+      if(OV_LEVEL==='detail'&&(r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
+      const label=OV_LEVEL==='detail'?trendLabel(r,base,cat):base;
       const key=cat+'|'+label;
       const w=parseFloat(r.trend_strength)||5;
       if(!T.has(key))T.set(key,{cat,label,strength:0,posts:0,srcs:new Set(),thumbs:[],det:new Map(),ax:{}});
@@ -3375,8 +3435,10 @@ renderHealth();
       (function(){try{(JSON.parse(r.dominant_colors||'[]')||[]).slice(0,1).forEach(c=>{if(c){o.det.set(c,(o.det.get(c)||0)+1);addax('color',c);}});}catch(e){}})();
       try{const im=JSON.parse(r.images||'[]')[0];const t=im&&(im.thumbUrl||im.localPath);if(t&&o.thumbs.length<10)o.thumbs.push(t.startsWith('data:')?t:String(t).replace(/\\\\/g,'/'));}catch(e){}
     }));
-    // 순위: posts 많은 순 → 소스 2개+ 우선 → strength
+    // 순위: Other 류는 뒤로 → posts 많은 순 → 소스 2개+ 우선 → strength
+    const isOther=x=>/\bother\b/i.test(x.label);
     return [...T.values()].sort((a,b)=>
+      (isOther(a)-isOther(b)) ||
       (b.posts-a.posts) ||
       ((b.srcs.size>=2)-(a.srcs.size>=2)) ||
       (b.strength-a.strength));
@@ -3413,7 +3475,12 @@ renderHealth();
     FILES.forEach(f=>f.rows.forEach(r=>{
       const ef=eff(r);if(!ef||ef.category!==cat)return;
       if(OV_GENDER!=='ALL'){const g=rowGender(r);if(g&&g!==OV_GENDER)return;}
-      const s=ef.sub2||ef.sub_category||'Other';sub.set(s,(sub.get(s)||0)+1);
+      // 레벨별 그룹키
+      let s;
+      if(OV_LEVEL==='sub_category')s=ef.sub_category||ef.sub2||'Other';
+      else if(OV_LEVEL==='detail'){let base=ef.sub2||ef.sub_category||'Other';s=trendLabel(r,base,cat);}
+      else s=ef.sub2||ef.sub_category||'Other';
+      sub.set(s,(sub.get(s)||0)+1);
       try{(JSON.parse(r.dominant_colors||'[]')||[]).forEach(c=>{if(c){const g=colGroup(c);color.set(g[0],{n:(color.get(g[0])?.n||0)+1,hex:g[1]});}});}catch(e){}
       let d={};try{d=JSON.parse(r.details||'{}');}catch(e){}
       MAIN_AXES.forEach(ax=>{if(ax in d){(Array.isArray(d[ax])?d[ax]:[d[ax]]).forEach(v=>{if(v)axes[ax].set(v,(axes[ax].get(v)||0)+1);});}});
@@ -3431,8 +3498,9 @@ renderHealth();
     const srcLine=srcNames.length?' · data: '+[...new Set(srcNames)].join(', '):'';
     let h=`<div class="ov-head">Overview${OV_CAT!=='ALL'?' — '+esc(OV_CAT):''}</div><div class="ov-sub">${OV_CAT==='ALL'?'All sources combined':esc(OV_CAT)} · ${T.length} trends · engagement = posts${esc(srcLine)}</div>`;
     h+=`<div class="ov-levels"><span class="ov-lvllbl">Level</span>
-      <span class="ov-lvl ${OV_LEVEL==='sub_category'?'on':''}" data-ovlvl="sub_category">sub-category</span>
-      <span class="ov-lvl ${OV_LEVEL==='sub2'?'on':''}" data-ovlvl="sub2">detailed</span></div>`;
+      <span class="ov-lvl ${OV_LEVEL==='sub_category'?'on':''}" data-ovlvl="sub_category">Category</span>
+      <span class="ov-lvl ${OV_LEVEL==='sub2'?'on':''}" data-ovlvl="sub2">Item</span>
+      <span class="ov-lvl ${OV_LEVEL==='detail'?'on':''}" data-ovlvl="detail">Detail</span></div>`;
     h+=`<table class="ovt"><thead><tr><th style="width:30px"></th><th>Trend</th><th style="width:130px">Trajectory</th><th style="width:170px">Trend Cast</th><th style="width:120px">Growth Rate</th><th style="width:90px">Engagement</th><th style="width:60px">Flags</th></tr></thead><tbody>`;
     // 트렌드별 사진 인덱스 (무신사/SNS 분리)
     const SNS=new Set(['instagram','xiaohongshu','xhs']);
@@ -3443,8 +3511,8 @@ renderHealth();
       if(OV_GENDER!=='ALL'){const g=rowGender(r);if(g&&g!==OV_GENDER)return;}
       const sub2=(r.sub2||'').trim(),sub1=(r.sub_category||'').trim();
       let base=OV_LEVEL==='sub_category'?(sub1||sub2):(sub2||sub1);if(!base)return;
-      if(OV_LEVEL!=='sub_category'&&(r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
-      const key=cat+'|'+(OV_LEVEL==='sub_category'?base:trendLabel(r.details,base));
+      if(OV_LEVEL==='detail'&&(r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
+      const key=cat+'|'+(OV_LEVEL==='detail'?trendLabel(r,base,cat):base);
       let thumb='',purl='';try{const im=JSON.parse(r.images||'[]')[0];if(im){thumb=(im.thumbUrl||im.localPath)||'';purl=im.productUrl||'';if(thumb&&!thumb.startsWith('data:'))thumb=String(thumb).replace(/\\\\/g,'/');}}catch(e){}
       if(!thumb)return;
       const bucket=SNS.has(srcKey(r.source))?'sns':'musinsa';
@@ -3480,7 +3548,7 @@ renderHealth();
     });
     h+=`</tbody></table>`;
     document.getElementById('overviewInner').innerHTML=h;
-    document.querySelectorAll('[data-ovlvl]').forEach(el=>el.addEventListener('click',()=>{OV_LEVEL=el.getAttribute('data-ovlvl');renderOverview();}));
+    document.querySelectorAll('[data-ovlvl]').forEach(el=>el.addEventListener('click',()=>{OV_LEVEL=el.getAttribute('data-ovlvl');window.OV_LEVEL=OV_LEVEL;renderOverview();if(window.PROP_RENDER)window.PROP_RENDER();}));
     document.querySelectorAll('.ov-trow').forEach(row=>row.addEventListener('click',()=>{
       const tk=row.getAttribute('data-tk');const exp=document.querySelector(`[data-exp="${CSS.escape(tk)}"]`);
       if(exp)exp.style.display=exp.style.display==='none'?'':'none';
@@ -3495,7 +3563,12 @@ renderHealth();
     const cats=CAT_ORDER.filter(c=>present.has(c));
     if(!cats.length)return;
     const show=(OV_CAT==='ALL')?cats:cats.filter(c=>c===OV_CAT);
-    let h=`<div class="tg-head">Trend Graph${OV_CAT!=='ALL'?' — '+esc(OV_CAT):''}</div><div class="tg-sub">Sub-category · color · detail distribution${OV_CAT==='ALL'?' (all categories)':''}</div>`;
+    const LVLNAME={sub_category:'Category',sub2:'Item',detail:'Detail'};
+    let h=`<div class="tg-head">Trend Graph${OV_CAT!=='ALL'?' — '+esc(OV_CAT):''}</div><div class="tg-sub">${LVLNAME[OV_LEVEL]||'Item'} · color · detail distribution${OV_CAT==='ALL'?' (all categories)':''}</div>`;
+    h+=`<div class="ov-levels"><span class="ov-lvllbl">Level</span>
+      <span class="ov-lvl ${OV_LEVEL==='sub_category'?'on':''}" data-ovlvl="sub_category">Category</span>
+      <span class="ov-lvl ${OV_LEVEL==='sub2'?'on':''}" data-ovlvl="sub2">Item</span>
+      <span class="ov-lvl ${OV_LEVEL==='detail'?'on':''}" data-ovlvl="detail">Detail</span></div>`;
     const qbars=(entries,colorFn)=>{
       if(!entries.length)return '<span class="gr">—</span>';
       const max=entries[0][1];
@@ -3518,7 +3591,7 @@ renderHealth();
       h+=`<div class="tg-catblock">
         <div class="tg-catname">${esc(cat)} <span class="tg-n">${subTot} items</span></div>
         <div class="tg-sec">
-          <div class="tg-seclbl">SUB-CATEGORY</div>
+          <div class="tg-seclbl">${OV_LEVEL==='sub_category'?'SUB-CATEGORY':OV_LEVEL==='detail'?'DETAILED':'ITEM'}</div>
           <div class="tg-secrow">
             <canvas class="tgc" data-cat="${esc(cat)}" data-kind="sub" width="180" height="180"></canvas>
             <div class="tg-qbars">${qbars(subE,(k,i)=>NEONPAL[i%NEONPAL.length])}</div>
@@ -3538,6 +3611,7 @@ renderHealth();
       </div>`;
     });
     document.getElementById('trendgraphInner').innerHTML=h;
+    document.querySelectorAll('#trendgraphInner [data-ovlvl]').forEach(el=>el.addEventListener('click',()=>{OV_LEVEL=el.getAttribute('data-ovlvl');window.OV_LEVEL=OV_LEVEL;renderTrendGraph();renderOverview();if(window.PROP_RENDER)window.PROP_RENDER();}));
     drawAllPies(show);
   }
   // 형광 팔레트 (sub-category 도넛용)
@@ -3582,6 +3656,10 @@ renderHealth();
     const el=document.getElementById('snsInner');
     if(!T.length){el.innerHTML=`<div class="empty"><div class="empty-mark">◐</div><div class="empty-title">SNS Trend</div><div class="empty-sub">load instagram / xiaohongshu CSV</div></div>`;return;}
     let h=`<div class="ov-head">SNS Trend${OV_CAT!=='ALL'?' — '+esc(OV_CAT):''}</div><div class="ov-sub">Instagram · Xiaohongshu · ${T.length} trends · click a row for photos</div>`;
+    h+=`<div class="ov-levels"><span class="ov-lvllbl">Level</span>
+      <span class="ov-lvl ${OV_LEVEL==='sub_category'?'on':''}" data-ovlvl="sub_category">Category</span>
+      <span class="ov-lvl ${OV_LEVEL==='sub2'?'on':''}" data-ovlvl="sub2">Item</span>
+      <span class="ov-lvl ${OV_LEVEL==='detail'?'on':''}" data-ovlvl="detail">Detail</span></div>`;
     h+=`<table class="ovt"><thead><tr><th style="width:30px"></th><th>Trend</th><th style="width:90px">Category</th><th style="width:150px">Source</th><th style="width:90px">Engagement</th><th style="width:70px">Photos</th></tr></thead><tbody>`;
     T.forEach((t,i)=>{
       const cast=[...t.srcs].map(s=>{const m=SRCMETA[s]||['#888',s||'?'];return `<span class="cast"><span class="dot" style="background:${m[0]}"></span>${esc(m[1])}</span>`;}).join('');
@@ -3598,6 +3676,7 @@ renderHealth();
     });
     h+=`</tbody></table>`;
     el.innerHTML=h;
+    el.querySelectorAll('[data-ovlvl]').forEach(x=>x.addEventListener('click',()=>{OV_LEVEL=x.getAttribute('data-ovlvl');window.OV_LEVEL=OV_LEVEL;renderAll();if(window.PROP_RENDER)window.PROP_RENDER();}));
     el.querySelectorAll('.sns-row').forEach(row=>row.addEventListener('click',()=>{
       const p=document.getElementById('snsp-'+row.getAttribute('data-i'));
       if(p)p.style.display=p.style.display==='none'?'':'none';
