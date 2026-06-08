@@ -1,0 +1,3838 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TREND INTELLIGENCE — v12</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #ffffff;
+    --bg-card:   #ffffff;
+    --bg-soft:   #f5f5f3;
+    --ink:       #111111;
+    --ink-2:     #555555;
+    --ink-3:     #9a9a9a;
+    --line:      #e7e7e4;
+    --line-soft: #f0f0ee;
+    --accent:    #1c2b4a;
+    --good:      #2d6e4f;
+    --warn:      #b8821a;
+    --bad:       #a04848;
+    --info:      #1c2b4a;
+    --serif:     'Inter', -apple-system, 'Helvetica Neue', sans-serif;
+    --sans:      'Inter', -apple-system, 'Helvetica Neue', sans-serif;
+    --mono:      'JetBrains Mono', 'SF Mono', monospace;
+    --radius:    14px;
+    --shadow:    0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─────────────────────────────── */
+  header{
+    border-bottom: 0.5px solid var(--line);
+    background: var(--bg);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 20px 24px;
+    flex-wrap: wrap;
+  }
+  .brand{ display:flex; flex-direction:column; gap:1px; }
+  .brand .mark{
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .brand .mark em{ font-style: italic; font-weight: 400; color: var(--ink-2); }
+  .brand .sub{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+  }
+
+  .conn-wrap{ flex:1; display:flex; align-items:center; gap:8px; min-width:300px; }
+  .url-input{
+    flex:1;
+    height: 32px;
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    padding: 0 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    border-radius: 2px;
+    outline: none;
+  }
+  .url-input:focus{ border-color: var(--ink); }
+  .btn-conn{
+    height: 32px;
+    padding: 0 14px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .btn-conn:hover{ opacity: 0.85; }
+  .btn-conn.ok{ background: var(--good); }
+
+  /* Data Health */
+  .health{
+    display: flex; align-items: center; gap: 10px;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+  .health-label{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-right: 2px;
+    padding-right: 8px;
+    border-right: 0.5px solid var(--line);
+  }
+  .health-dot{
+    position: relative;
+    display: inline-flex; align-items: center; gap: 4px;
+    cursor: help;
+  }
+  .health-dot::before{
+    content:''; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line);
+  }
+  .health-dot.full::before{ background: #00E6A8; box-shadow: 0 0 6px rgba(0,230,168,.8); }
+  .health-dot.partial::before{ background: var(--warn); }
+  .health-dot.empty::before{ background: var(--line); border: 1px solid var(--ink-3); width:5px; height:5px; }
+  .health-dot .name{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    color: var(--ink-2);
+  }
+  .health-dot .tip{
+    position: absolute; top: 100%; right: 0; margin-top: 6px;
+    background: var(--ink); color: #fff;
+    padding: 6px 9px;
+    font-family: var(--mono); font-size: 9px;
+    line-height: 1.5;
+    white-space: nowrap;
+    border-radius: 2px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.15s;
+    z-index: 100;
+  }
+  .health-dot:hover .tip{ opacity: 1; }
+
+  /* ─── CONTROL BAR ─────────────────────────── */
+  .control-bar{
+    display: flex; align-items: center; gap: 18px;
+    padding: 12px 24px;
+    border-bottom: 0.5px solid var(--line);
+    background: var(--bg-soft);
+    flex-wrap: wrap;
+  }
+  .ctrl-group{ display: flex; align-items: center; gap: 8px; }
+  .ctrl-label{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .select{
+    height: 28px;
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    padding: 0 22px 0 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    border-radius: 9px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%231a1a1a' fill='none' stroke-width='1'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    cursor: pointer;
+    min-width: 100px;
+  }
+  .chips{ display: flex; gap: 4px; }
+  .chip{
+    height: 26px;
+    padding: 0 13px;
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex; align-items: center;
+    transition: all 0.12s;
+  }
+  .chip:hover{ border-color: var(--accent); color: var(--accent); }
+  .chip.on{ background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Season chip styling — visual distinction between SS and FW */
+  .chip.season-ss::before{
+    content:''; width:6px; height:6px; border-radius:50%;
+    background: var(--accent); margin-right:6px;
+    display:inline-block;
+  }
+  .chip.season-fw::before{
+    content:''; width:6px; height:6px; border-radius:50%;
+    background: var(--info); margin-right:6px;
+    display:inline-block;
+  }
+  .chip.season-ss.on{ background: var(--accent); border-color: var(--accent); color:#fff; }
+  .chip.season-ss.on::before{ background:#fff; }
+  .chip.season-fw.on{ background: var(--info); border-color: var(--info); color:#fff; }
+  .chip.season-fw.on::before{ background:#fff; }
+
+  .actions{ display: flex; gap: 6px; margin-left: auto; }
+  .btn-action{
+    height: 28px;
+    padding: 0 14px;
+    background: var(--bg-card);
+    border: 0.5px solid var(--ink);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-action:hover{ background: var(--ink); color: #fff; }
+  .btn-action:disabled{ opacity: 0.35; cursor: not-allowed; }
+  .btn-action .arrow{ font-family: var(--serif); font-size: 13px; }
+
+  /* ─── TABS ────────────────────────────────── */
+  .tab-bar{
+    display: flex;
+    border-bottom: 0.5px solid var(--line);
+    background: var(--bg);
+    padding: 0 24px;
+    align-items: flex-end;
+  }
+  .tab{
+    padding: 14px 22px 12px;
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--ink-3);
+    cursor: pointer;
+    border-bottom: 1.5px solid transparent;
+    margin-bottom: -0.5px;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .tab .num{
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: 0.1em;
+  }
+  .tab:hover{ color: var(--ink); }
+  .tab.on{ color: var(--ink); border-bottom-color: var(--ink); font-style: italic; }
+  .tab.on .num{ color: var(--ink); }
+
+  /* ─── MAIN ────────────────────────────────── */
+  main{
+    padding: 24px;
+    min-height: calc(100vh - 200px);
+  }
+  .panel{ display: none; }
+  .panel.on{ display: block; }
+
+  /* Data confidence banner */
+  .conf-banner{
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 24px;
+    border-radius: 2px;
+  }
+  .conf-section{ display: flex; flex-direction: column; gap: 4px; }
+  .conf-key{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .conf-val{
+    font-family: var(--serif);
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .conf-val small{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    margin-left: 6px;
+    letter-spacing: 0.05em;
+  }
+  .conf-bar{
+    flex: 1;
+    height: 4px;
+    background: var(--line-soft);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .conf-bar-fill{
+    height: 100%;
+    background: var(--good);
+    transition: width 0.5s ease;
+  }
+  .conf-bar-fill.partial{ background: var(--warn); }
+  .conf-bar-fill.low{ background: var(--bad); }
+  .conf-pct{
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    min-width: 50px;
+    text-align: right;
+  }
+
+  /* Empty state */
+  .empty{
+    padding: 80px 20px;
+    text-align: center;
+    color: var(--ink-3);
+  }
+  .empty-mark{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 48px;
+    color: var(--line);
+    margin-bottom: 12px;
+  }
+  .empty-title{
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--ink-2);
+    margin-bottom: 4px;
+    font-style: italic;
+  }
+  .empty-sub{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+  }
+
+  /* ── OVERVIEW TABLE (Trendalytics style) ── */
+  .ov-meta{
+    display: flex; align-items: baseline; gap: 18px;
+    margin-bottom: 14px;
+    padding: 0 2px;
+  }
+  .ov-period{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .ov-period strong{ color: var(--ink); font-weight: 500; }
+  .ov-count{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+
+  .table-wrap{
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    border-radius: 2px;
+    overflow: auto;
+  }
+  table.trend{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.trend thead th{
+    background: var(--bg-soft);
+    padding: 10px 12px;
+    text-align: left;
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-bottom: 0.5px solid var(--line);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  table.trend thead th.group-tt{
+    background: #ebe6db;
+    color: var(--ink-2);
+    border-left: 0.5px solid var(--line);
+  }
+  table.trend tbody td{
+    padding: 12px;
+    border-bottom: 0.5px solid var(--line-soft);
+    vertical-align: middle;
+  }
+  table.trend tbody tr:hover{ background: var(--bg-soft); }
+  table.trend tbody tr:last-child td{ border-bottom: none; }
+
+  .cell-name{
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .cell-name .hot{ color: var(--accent); font-size: 11px; margin-left: 4px; }
+  .cell-num{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .cell-num.muted{ color: var(--ink-3); }
+  .cell-pct{
+    font-family: var(--mono);
+    font-size: 11px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .cell-pct.up{ color: var(--good); }
+  .cell-pct.down{ color: var(--bad); }
+
+  .traj{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+  .traj.acc{ color: var(--good); }
+  .traj.dec{ color: var(--bad); }
+  .traj.idle{ color: var(--ink-3); }
+
+  .badge{
+    display: inline-flex; align-items: center;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 0.5px solid;
+  }
+  .badge.safe{ color: var(--good); border-color: var(--good); background: rgba(45,110,79,0.06); }
+  .badge.trendy{ color: #b8530a; border-color: #b8530a; background: rgba(184,83,10,0.08); }
+  .badge.solid{ color: var(--ink-2); border-color: var(--line); background: var(--bg-soft); }
+  .badge.decreasing{ color: var(--bad); border-color: var(--bad); background: rgba(160,72,72,0.08); }
+  .badge.strong{ color: var(--good); border-color: var(--good); background: var(--good); color: #fff; }
+  .badge.avg{ color: var(--warn); border-color: var(--warn); background: rgba(184,130,26,0.08); }
+  .badge.weak{ color: var(--bad); border-color: var(--bad); background: rgba(160,72,72,0.08); }
+  .badge.idle{ color: var(--ink-3); border-color: var(--line); }
+  .badge.low-data{ color: var(--ink-3); border-color: var(--line); background: var(--bg-soft); }
+
+  .spark{
+    display: inline-block;
+    width: 80px;
+    height: 24px;
+    vertical-align: middle;
+  }
+  .spark path{ stroke: var(--ink-2); stroke-width: 1; fill: none; }
+  .spark.up path{ stroke: var(--good); }
+  .spark.down path{ stroke: var(--bad); }
+
+  .nodata{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    position: relative;
+    cursor: help;
+  }
+  .nodata::after{
+    content: 'ⓘ';
+    font-size: 9px;
+    margin-left: 3px;
+    opacity: 0.5;
+  }
+  .nodata .tip{
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff;
+    padding: 5px 8px;
+    font-family: var(--mono); font-size: 9px;
+    white-space: nowrap;
+    border-radius: 2px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.15s;
+    margin-bottom: 4px;
+    z-index: 50;
+  }
+  .nodata:hover .tip{ opacity: 1; }
+
+  /* ── IMAGE BOARD ── */
+  .ib-header{
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .ib-title{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink);
+  }
+  .ib-source{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .ib-groups{ display: flex; flex-direction: column; gap: 28px; }
+  .ib-group{
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: 2px;
+  }
+  .ib-group-head{
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .ib-group-name-line{
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .ib-group-name{
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--ink);
+  }
+  .ib-group-count{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    padding: 1px 6px;
+    border: 0.5px solid var(--line);
+    border-radius: 2px;
+  }
+  /* Signal chips — top trend signals in this category */
+  .ib-signals{
+    display: flex; flex-wrap: wrap; gap: 6px;
+    align-items: center;
+  }
+  .sig-chip{
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px;
+    background: var(--bg-soft);
+    border: 0.5px solid var(--line);
+    border-radius: 2px;
+    font-size: 11px;
+  }
+  .sig-chip .sig-name{
+    font-family: var(--serif);
+    color: var(--ink);
+    font-style: italic;
+  }
+  .sig-chip .sig-count{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .sig-empty{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+  }
+
+  .ib-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+  .ib-tile{
+    aspect-ratio: 3/4;
+    background: var(--bg-soft);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+  .ib-tile.ib-tile-empty{
+    background: repeating-linear-gradient(45deg, var(--bg-soft) 0, var(--bg-soft) 4px, var(--bg) 4px, var(--bg) 8px);
+    cursor: default;
+    opacity: 0.4;
+  }
+  .ib-tile img{
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s;
+  }
+  .ib-tile:hover img{ transform: scale(1.04); }
+  .ib-tile .lab{
+    position: absolute; left: 6px; bottom: 6px;
+    background: rgba(26,26,26,0.85);
+    color: #fff;
+    padding: 2px 6px;
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: 0.06em;
+    border-radius: 1px;
+  }
+
+  /* ── KEYWORD ANALYSIS ── */
+  .kw-grid{
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .kw-card{
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: 2px;
+  }
+  .kw-card-head{
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .kw-card-title{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .kw-card-sub{
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .kw-list{ display: flex; flex-direction: column; gap: 8px; }
+  .kw-row{
+    display: grid;
+    grid-template-columns: 18px 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 0.5px dotted var(--line-soft);
+  }
+  .kw-row:last-child{ border-bottom: none; }
+  .kw-rank{
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-3);
+  }
+  .kw-name{
+    font-family: var(--serif);
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .kw-bar{
+    width: 80px;
+    height: 3px;
+    background: var(--line-soft);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .kw-bar-fill{
+    height: 100%;
+    background: var(--ink);
+  }
+  .kw-count{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-2);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* Cloud */
+  .cloud{
+    display: flex; flex-wrap: wrap; gap: 6px 10px;
+    align-items: baseline;
+    padding: 4px 0;
+  }
+  .cloud-word{
+    font-family: var(--serif);
+    color: var(--ink);
+    line-height: 1;
+    transition: color 0.15s;
+    cursor: default;
+  }
+  .cloud-word:hover{ color: var(--accent); }
+
+  /* ── KEYWORD ANALYSIS — quad layout ── */
+  .kw-meta{
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .kw-meta span:first-child{ color: var(--ink); font-weight: 500; }
+
+  .kw-quad{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 14px;
+  }
+  .kw-card-wide{ grid-column: 1 / -1; }
+
+  .kw-card{
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: 2px;
+    min-height: 200px;
+  }
+  .kw-card-head{
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .kw-card-title{
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .kw-card-sub{
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .kw-empty{
+    padding: 30px 12px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    letter-spacing: 0.05em;
+  }
+
+  /* Donut */
+  .donut-wrap{
+    display: flex; align-items: center; gap: 20px;
+    padding: 6px 0;
+  }
+  .donut{
+    width: 160px; height: 160px;
+    flex-shrink: 0;
+  }
+  .donut-total{
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    fill: var(--ink);
+  }
+  .donut-label{
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    fill: var(--ink-3);
+  }
+  .legend{
+    flex: 1;
+    display: flex; flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .legend-row{
+    display: flex; align-items: center; gap: 8px;
+    padding: 2px 0;
+  }
+  .legend-sw{
+    width: 12px; height: 12px;
+    border-radius: 2px;
+    border: 0.5px solid var(--line);
+    flex-shrink: 0;
+  }
+  .legend-name{
+    font-family: var(--sans);
+    font-size: 11px;
+    color: var(--ink);
+    flex: 1;
+    text-transform: capitalize;
+  }
+  .legend-val{
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: 0.05em;
+  }
+
+  /* Sub-category table */
+  .subcat-table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .subcat-table thead th{
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 0.5px solid var(--line);
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .subcat-table tbody td{
+    padding: 8px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .subcat-table tbody tr:hover{ background: var(--bg-soft); }
+  .subcat-table .kw-rank{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+  }
+  .subcat-table .kw-name{
+    font-family: var(--serif);
+    font-size: 13px;
+    color: var(--ink);
+    text-transform: capitalize;
+  }
+  .subcat-table .kw-cat{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-2);
+    letter-spacing: 0.05em;
+  }
+  .subcat-table .kw-count{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink);
+    text-align: right;
+    font-weight: 500;
+  }
+  .src-tag{
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-right: 2px;
+    background: var(--bg-soft);
+    color: var(--ink-2);
+    min-width: 18px;
+    text-align: center;
+  }
+  .src-tag.ig{ background: rgba(225,48,108,0.08); color: #c1265a; }
+  .src-tag.wgsn{ background: rgba(124,58,237,0.08); color: #6028c4; }
+  .src-tag.rank{ background: rgba(45,106,79,0.08); color: #2d6a4f; }
+
+  /* ── Sub-category expandable rows ── */
+  .subcat-list{
+    display: flex; flex-direction: column;
+    gap: 0;
+  }
+  .subcat-expandable{
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .subcat-expandable:last-child{ border-bottom: none; }
+  .subcat-expandable[open]{ background: var(--bg-soft); }
+  .subcat-summary{
+    display: grid;
+    grid-template-columns: 32px 1fr 80px 50px 2fr 20px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 8px;
+    cursor: pointer;
+    list-style: none;
+    transition: background 0.12s;
+  }
+  .subcat-summary::-webkit-details-marker{ display: none; }
+  .subcat-summary:hover{ background: var(--bg-soft); }
+  .subcat-expandable[open] .subcat-summary{ background: var(--bg-soft); }
+  .subcat-rank{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+  }
+  .subcat-name{
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .subcat-cat{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+  }
+  .subcat-count{
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: right;
+  }
+  .subcat-preview{
+    display: flex; flex-wrap: wrap; gap: 5px;
+    align-items: center;
+    overflow: hidden;
+  }
+  .subcat-preview .sig-chip{
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+  .subcat-toggle{
+    font-size: 14px;
+    color: var(--ink-3);
+    transition: transform 0.2s;
+  }
+  .subcat-expandable[open] .subcat-toggle{
+    transform: rotate(180deg);
+    color: var(--ink);
+  }
+
+  /* Expanded detail content */
+  .subcat-detail{
+    padding: 14px 18px 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    background: var(--bg);
+  }
+  .signal-section{
+    display: flex; flex-direction: column;
+    gap: 6px;
+  }
+  .signal-section-head{
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-bottom: 4px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .signal-section-bars{
+    display: flex; flex-direction: column;
+    gap: 4px;
+  }
+  .signal-row{
+    display: grid;
+    grid-template-columns: 1fr 60px 28px;
+    gap: 8px;
+    align-items: center;
+    padding: 3px 0;
+    font-size: 11px;
+  }
+  .signal-name{
+    font-family: var(--serif);
+    color: var(--ink);
+    text-transform: capitalize;
+  }
+  .signal-bar{
+    height: 4px;
+    background: var(--line-soft);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .signal-bar-fill{
+    height: 100%;
+    background: var(--ink-2);
+  }
+  .signal-count{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink);
+    text-align: right;
+    font-weight: 500;
+  }
+  .src-item{ display: flex; flex-direction: column; gap: 4px; }
+  .src-head{
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .src-name{
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .src-val{
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink);
+  }
+  .src-bar{
+    height: 3px;
+    background: var(--line-soft);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .src-bar-fill{
+    height: 100%;
+    background: var(--info);
+  }
+  .src-bar-fill.zero{
+    background: repeating-linear-gradient(45deg, var(--line) 0, var(--line) 2px, transparent 2px, transparent 4px);
+  }
+
+  /* Progress */
+  .prog-overlay{
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--line-soft);
+    z-index: 9999;
+    display: none;
+  }
+  .prog-overlay.on{ display: block; }
+  .prog-overlay-fill{
+    height: 100%;
+    background: var(--ink);
+    transition: width 0.2s;
+  }
+  .prog-msg{
+    position: fixed; top: 8px; right: 20px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink);
+    background: var(--bg-card);
+    padding: 4px 10px;
+    border: 0.5px solid var(--line);
+    border-radius: 2px;
+    z-index: 9999;
+    display: none;
+  }
+  .prog-msg.on{ display: block; }
+
+  /* Toast */
+  .toast{
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    border-radius: 2px;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: all 0.2s;
+    max-width: 360px;
+  }
+  .toast.on{ opacity: 1; transform: translateY(0); }
+  .toast.err{ background: var(--bad); }
+</style>
+</head>
+<body>
+
+<!-- 비밀번호 게이트 -->
+<div id="pwGate" style="position:fixed;inset:0;z-index:99999;background:#0d1526;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif">
+  <div style="text-align:center;color:#fff;width:300px">
+    <div style="font-size:13px;letter-spacing:.25em;color:#A07840;margin-bottom:8px">F&amp;F CONSUMER STRATEGY</div>
+    <div style="font-size:20px;font-weight:600;margin-bottom:28px">Trend Dashboard</div>
+    <input id="pwInput" type="password" placeholder="Password" autocomplete="off"
+      style="width:100%;padding:12px 14px;border:1px solid #2a3a55;border-radius:10px;background:#16213a;color:#fff;font-size:14px;outline:none;box-sizing:border-box">
+    <div id="pwErr" style="color:#e0683a;font-size:11px;height:14px;margin-top:8px"></div>
+    <button id="pwBtn" style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:10px;background:#A07840;color:#fff;font-size:14px;font-weight:600;cursor:pointer">들어가기</button>
+  </div>
+</div>
+<script>
+(function(){
+  var PW='cst2026!';
+  function tryPw(){
+    var v=document.getElementById('pwInput').value;
+    if(v===PW){document.getElementById('pwGate').style.display='none';}
+    else{document.getElementById('pwErr').textContent='비밀번호가 올바르지 않습니다';
+         document.getElementById('pwInput').value='';}
+  }
+  document.getElementById('pwBtn').addEventListener('click',tryPw);
+  document.getElementById('pwInput').addEventListener('keydown',function(e){if(e.key==='Enter')tryPw();});
+  document.getElementById('pwInput').focus();
+})();
+</script>
+
+<div class="prog-overlay" id="progOverlay"><div class="prog-overlay-fill" id="progFill" style="width:0%"></div></div>
+<div class="prog-msg" id="progMsg">Loading…</div>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <div class="mark">Trend<em>Intelligence</em></div>
+    <div class="sub">v6 — Editorial Edition</div>
+  </div>
+
+  <div class="conn-wrap">
+    <input type="text" id="apiUrl" class="url-input" placeholder="Apps Script Web App URL" />
+    <button id="btnConn" class="btn-conn" onclick="connect()">Connect</button>
+    <label class="btn-conn" id="btnCsv" style="cursor:pointer;display:inline-flex;align-items:center">Load CSV<input type="file" id="csvFile" accept=".csv" multiple style="display:none"></label>
+  </div>
+
+  <div class="health" id="healthBar">
+    <span class="health-label">Data Health</span>
+    <span class="health-dot empty" data-src="instagram">
+      <span class="name">IG</span>
+      <span class="tip">Instagram — checking...</span>
+    </span>
+    <span class="health-dot empty" data-src="wgsn">
+      <span class="name">WGSN</span>
+      <span class="tip">WGSN — checking...</span>
+    </span>
+    <span class="health-dot empty" data-src="ranking">
+      <span class="name">RANK</span>
+      <span class="tip">Ranking — checking...</span>
+    </span>
+    <span class="health-dot empty" data-src="xhs">
+      <span class="name">XHS</span>
+      <span class="tip">Xiaohongshu — not connected</span>
+    </span>
+    <span class="health-dot empty" data-src="news">
+      <span class="name">NEWS</span>
+      <span class="tip">Newsletter — not connected</span>
+    </span>
+    <span class="health-dot empty" data-src="yoy">
+      <span class="name">YoY</span>
+      <span class="tip">Year-over-Year baseline — none</span>
+    </span>
+  </div>
+</header>
+
+<!-- CONTROL BAR -->
+<div class="control-bar">
+  <div class="ctrl-group">
+    <span class="ctrl-label">Season</span>
+    <div class="chips" id="seasonChips">
+      <button class="chip season-ss" data-code="25SS">25 SS</button>
+      <button class="chip season-fw" data-code="2526FW">25/26 FW</button>
+      <button class="chip season-ss on" data-code="26SS">26 SS</button>
+      <button class="chip season-fw" data-code="2627FW">26/27 FW</button>
+      <button class="chip season-ss" data-code="27SS">27 SS</button>
+      <button class="chip season-fw" data-code="2728FW">27/28 FW</button>
+    </div>
+  </div>
+  <div class="ctrl-group" id="monthGroup" style="display:none">
+    <span class="ctrl-label">Month</span>
+    <select class="select" id="monthSel">
+      <option value="">All Season</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Category</span>
+    <div class="chips" id="catChips">
+      <button class="chip on" data-cat="ALL">All</button>
+      <button class="chip" data-cat="TOP">Top</button>
+      <button class="chip" data-cat="BOTTOM">Bottom</button>
+      <button class="chip" data-cat="OUTERWEAR">Outerwear</button>
+      <button class="chip" data-cat="DRESS">Dress</button>
+      <button class="chip" data-cat="BAG">Bag</button>
+      <button class="chip" data-cat="HAT">Hat</button>
+      <button class="chip" data-cat="ACC">Acc</button>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <span class="ctrl-label">Gender</span>
+    <div class="chips" id="genderChips">
+      <button class="chip on" data-gender="ALL">All</button>
+      <button class="chip" data-gender="여자">Women</button>
+      <button class="chip" data-gender="남자">Men</button>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn-action" id="btnLoad" onclick="loadData()" disabled>
+      <span class="arrow">↓</span> Load Data
+    </button>
+    <button class="btn-action" id="btnOverview" onclick="renderAll()" disabled>
+      <span class="arrow">▸</span> Overview
+    </button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab on" data-p="overview" onclick="switchTab(this)">
+    <span class="num">01</span> Overview
+  </div>
+  <div class="tab" data-p="trendgraph" onclick="switchTab(this)">
+    <span class="num">02</span> Trend Graph
+  </div>
+  <div class="tab" data-p="sns" onclick="switchTab(this)">
+    <span class="num">03</span> SNS Trend
+  </div>
+  <div class="tab" data-p="proposal" onclick="switchTab(this)">
+    <span class="num">04</span> Market Analysis
+  </div>
+  <div class="tab" data-p="images" onclick="switchTab(this)">
+    <span class="num">05</span> Image Board
+  </div>
+</div>
+
+<main>
+  <!-- OVERVIEW -->
+  <div class="panel on" id="panel-overview">
+    <div id="overviewInner">
+      <div class="empty">
+        <div class="empty-mark">T</div>
+        <div class="empty-title">Connect to begin</div>
+        <div class="empty-sub">paste Apps Script URL · connect · load data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREND GRAPH -->
+  <div class="panel" id="panel-trendgraph">
+    <div id="trendgraphInner">
+      <div class="empty"><div class="empty-mark">◷</div>
+        <div class="empty-title">Trend Graph</div>
+        <div class="empty-sub">load CSV · category distribution charts</div></div>
+    </div>
+  </div>
+
+  <!-- SNS TREND -->
+  <div class="panel" id="panel-sns">
+    <div id="snsInner">
+      <div class="empty"><div class="empty-mark">◐</div>
+        <div class="empty-title">SNS Trend</div>
+        <div class="empty-sub">instagram / xiaohongshu · with thumbnails</div></div>
+    </div>
+  </div>
+
+  <!-- IMAGE BOARD -->
+  <div class="panel" id="panel-images">
+    <div id="imagesInner">
+      <div class="empty">
+        <div class="empty-mark">◫</div>
+        <div class="empty-title">Image Board</div>
+        <div class="empty-sub">instagram only · grouped by category</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEYWORDS -->
+  <div class="panel" id="panel-keywords">
+    <div id="keywordsInner">
+      <div class="empty">
+        <div class="empty-mark">K</div>
+        <div class="empty-title">Keyword Analysis</div>
+        <div class="empty-sub">all sources combined</div>
+      </div>
+    </div>
+  </div>
+  <!-- PROPOSAL (CSV-driven, no backend) -->
+  <div class="panel" id="panel-proposal">
+    <div id="proposalInner">
+      <div class="empty">
+        <div class="empty-mark">◳</div>
+        <div class="empty-title">Proposal Board</div>
+        <div class="empty-sub">load trend_signals.csv + wgsn_signals.csv · no backend needed</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── SEASON DEFINITIONS ────────────────────────────────
+// SS = Mar-Aug (same year) / FW = Sep-Feb (crosses year boundary)
+const SEASON_DEFS = {
+  '25SS':   { type:'SS', months:['2025-03','2025-04','2025-05','2025-06','2025-07','2025-08'], label:'2025 S/S' },
+  '2526FW': { type:'FW', months:['2025-09','2025-10','2025-11','2025-12','2026-01','2026-02'], label:'25/26 F/W' },
+  '26SS':   { type:'SS', months:['2026-03','2026-04','2026-05','2026-06','2026-07','2026-08'], label:'2026 S/S' },
+  '2627FW': { type:'FW', months:['2026-09','2026-10','2026-11','2026-12','2027-01','2027-02'], label:'26/27 F/W' },
+  '27SS':   { type:'SS', months:['2027-03','2027-04','2027-05','2027-06','2027-07','2027-08'], label:'2027 S/S' },
+  '2728FW': { type:'FW', months:['2027-09','2027-10','2027-11','2027-12','2028-01','2028-02'], label:'27/28 F/W' },
+};
+
+// ─── STATE ─────────────────────────────────────────────
+const STATE = {
+  apiBase: '',
+  connected: false,
+  category: 'ALL',
+  source: 'all',
+  seasonCode: '26SS',     // current season (matches default 'on' chip)
+  month: '',              // optional sub-filter inside season
+  weight: 'balanced',
+  data: {
+    instagram: [],
+    wgsn: [],
+    ranking: [],
+    xhs: [],
+    news: [],
+  },
+  health: {
+    instagram: 'empty',
+    wgsn: 'empty',
+    ranking: 'empty',
+    xhs: 'empty',
+    news: 'empty',
+    yoy: 'empty',
+  },
+  availableMonths: [],    // months actually present in backend
+  loaded: false,
+};
+
+// ─── UTILITIES ─────────────────────────────────────────
+function $(id){ return document.getElementById(id); }
+function toast(msg, isErr){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 3000);
+}
+function progress(pct, msg){
+  const o = $('progOverlay'), f = $('progFill'), m = $('progMsg');
+  if(pct === null){
+    o.classList.remove('on');
+    m.classList.remove('on');
+    return;
+  }
+  o.classList.add('on');
+  m.classList.add('on');
+  f.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  m.textContent = msg || 'Loading…';
+}
+
+// fetch with JSONP-style fallback for Apps Script
+async function apiCall(action, params = {}){
+  if(!STATE.apiBase) throw new Error('Not connected');
+  const url = new URL(STATE.apiBase);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  try{
+    const res = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch(e){
+      throw new Error('Bad JSON: ' + txt.slice(0, 200));
+    }
+  }catch(e){
+    throw new Error('Fetch failed: ' + e.message);
+  }
+}
+
+// ─── CONNECT ────────────────────────────────────────────
+async function connect(){
+  const url = $('apiUrl').value.trim();
+  if(!url){ toast('Enter Apps Script URL', true); return; }
+  if(!/^https:\/\/script\.google\.com\//.test(url)){
+    toast('Must be a script.google.com URL', true);
+    return;
+  }
+  STATE.apiBase = url;
+  $('btnConn').textContent = 'Connecting…';
+  $('btnConn').disabled = true;
+  try{
+    const r = await apiCall('ping');
+    if(r && r.ok){
+      STATE.connected = true;
+      $('btnConn').textContent = 'Connected';
+      $('btnConn').classList.add('ok');
+      $('btnLoad').disabled = false;
+      toast('Connected');
+      // populate months
+      await loadMonths();
+      checkHealth();
+    } else {
+      throw new Error(r && r.error || 'ping failed');
+    }
+  }catch(e){
+    $('btnConn').textContent = 'Connect';
+    $('btnConn').disabled = false;
+    toast(e.message, true);
+  }
+}
+
+async function loadMonths(){
+  try{
+    const r = await apiCall('getMonths');
+    // Code.gs returns {ok:true, data:[months]}
+    const arr = (r && (r.data || r.months)) || [];
+    STATE.availableMonths = arr;
+    refreshMonthSelect();
+  }catch(e){
+    // ignore — months optional
+  }
+}
+
+// rebuild month dropdown showing only months in current season that have data
+function refreshMonthSelect(){
+  const def = SEASON_DEFS[STATE.seasonCode];
+  if(!def) return;
+  // intersection of season months and available months
+  const seasonMonthsWithData = def.months.filter(m => STATE.availableMonths.includes(m));
+  const sel = $('monthSel');
+  sel.innerHTML = '<option value="">All Season</option>' +
+    seasonMonthsWithData.map(m => `<option value="${m}">${m}</option>`).join('');
+  // show month group only if there are multiple months
+  $('monthGroup').style.display = seasonMonthsWithData.length > 0 ? '' : 'none';
+  STATE.month = '';
+  sel.value = '';
+}
+
+// ─── SEASON SELECTION ───────────────────────────────────
+function selectSeason(code){
+  if(!SEASON_DEFS[code]) return;
+  STATE.seasonCode = code;
+  // update chip UI
+  document.querySelectorAll('#seasonChips .chip').forEach(c => {
+    c.classList.toggle('on', c.getAttribute('data-code') === code);
+  });
+  // refresh month dropdown for this season
+  refreshMonthSelect();
+  // re-render if data already loaded
+  if(STATE.loaded) renderAll();
+  toast(SEASON_DEFS[code].label);
+}
+
+// attach season chip handlers
+document.querySelectorAll('#seasonChips .chip').forEach(c => {
+  c.addEventListener('click', () => selectSeason(c.getAttribute('data-code')));
+});
+
+// ─── HEALTH CHECK ───────────────────────────────────────
+// Backend has no /health endpoint — health is derived from loadData()
+async function checkHealth(){
+  // computed in loadData() based on item counts
+  renderHealth();
+}
+
+function renderHealth(){
+  document.querySelectorAll('.health-dot').forEach(el => {
+    const src = el.getAttribute('data-src');
+    const status = STATE.health[src] || 'empty';
+    el.classList.remove('full', 'partial', 'empty');
+    el.classList.add(status);
+    const tip = el.querySelector('.tip');
+    const labels = {
+      instagram: 'Instagram', wgsn: 'WGSN', ranking: 'Musinsa Ranking',
+      xhs: 'Xiaohongshu', news: 'Newsletter', yoy: 'YoY baseline'
+    };
+    const name = labels[src] || src;
+    if(status === 'full') tip.textContent = `${name} — sufficient data`;
+    else if(status === 'partial') tip.textContent = `${name} — limited data`;
+    else tip.textContent = `${name} — not available`;
+  });
+}
+
+// ─── LOAD DATA ──────────────────────────────────────────
+async function loadData(){
+  if(!STATE.connected){ toast('Connect first', true); return; }
+  progress(5, 'Loading…');
+
+  // Reset
+  STATE.data.instagram = [];
+  STATE.data.wgsn = [];
+  STATE.data.ranking = [];
+  STATE.data.xhs = [];
+  STATE.data.news = [];
+
+  try{
+    // Code.gs's getResults requires a month parameter. To get the whole season,
+    // we loop through each month in the season and aggregate.
+    const def = SEASON_DEFS[STATE.seasonCode];
+    const monthsToFetch = STATE.month
+      ? [STATE.month]
+      : def.months.filter(m => STATE.availableMonths.includes(m));
+
+    if(!monthsToFetch.length){
+      // fallback: try all available months
+      monthsToFetch.push(...STATE.availableMonths);
+    }
+
+    console.log('[loadData] fetching months:', monthsToFetch);
+
+    let allItems = [];
+    for(let i = 0; i < monthsToFetch.length; i++){
+      const m = monthsToFetch[i];
+      progress(10 + (60 * i / monthsToFetch.length), `Loading ${m}…`);
+      try{
+        const r = await apiCall('getResults', { month: m });
+        let items = [];
+        if(r && r.ok){
+          items = r.data || r.items || [];
+        } else if(Array.isArray(r)){
+          items = r;
+        } else if(r && Array.isArray(r.data)){
+          items = r.data;
+        }
+        console.log(`[loadData] ${m}: ${items.length} items`);
+        allItems = allItems.concat(items);
+      }catch(e){
+        console.warn(`[loadData] ${m} failed:`, e.message);
+      }
+    }
+
+    progress(75, 'Categorizing by source…');
+
+    // Bucket items by source
+    allItems.forEach(it => {
+      const src = (it.source || '').toLowerCase();
+      if(src === 'instagram') STATE.data.instagram.push(it);
+      else if(src === 'xiaohongshu' || src === 'xhs' || src === '小红书') STATE.data.xhs.push(it);
+      else if(src === 'newsletter' || src === 'news') STATE.data.news.push(it);
+      else if(src === 'trend_insight' || src === 'wgsn' || src === 'trend insight') STATE.data.wgsn.push(it);
+      else if(src === 'ranking' || src === 'musinsa') STATE.data.ranking.push(it);
+      else {
+        // No source tag — try to infer from fields
+        if(it.imageUrl || it.subCategory1 || it.sub_category) STATE.data.instagram.push(it);
+        else STATE.data.wgsn.push(it);
+      }
+    });
+
+    // Derive health from counts
+    const setHealth = (key, count) => {
+      const threshold = key === 'ranking' ? 20 : key === 'wgsn' ? 50 : 100;
+      STATE.health[key] = count >= threshold ? 'full' : count > 0 ? 'partial' : 'empty';
+    };
+    setHealth('instagram', STATE.data.instagram.length);
+    setHealth('wgsn',      STATE.data.wgsn.length);
+    setHealth('ranking',   STATE.data.ranking.length);
+    setHealth('xhs',       STATE.data.xhs.length);
+    setHealth('news',      STATE.data.news.length);
+
+    progress(95, 'Rendering…');
+    STATE.loaded = true;
+    $('btnOverview').disabled = false;
+    renderHealth();
+    renderAll();
+    progress(100, 'Done');
+    setTimeout(() => progress(null), 400);
+
+    // ─── DEBUG: log sample data structure ───
+    console.log('═══ DATA SAMPLES (first item of each source) ═══');
+    console.log('IG sample:',      STATE.data.instagram[0]);
+    console.log('WGSN sample:',    STATE.data.wgsn[0]);
+    console.log('RANK sample:',    STATE.data.ranking[0]);
+    const monthsCount = {};
+    STATE.data.instagram.forEach(it => {
+      const m = it.month || '(no month)';
+      monthsCount[m] = (monthsCount[m] || 0) + 1;
+    });
+    console.log('IG month distribution:', monthsCount);
+    console.log('Current season:', STATE.seasonCode, SEASON_DEFS[STATE.seasonCode]);
+    // ─── END DEBUG ───
+
+    const total = allItems.length;
+    const counts = `IG ${STATE.data.instagram.length} · WGSN ${STATE.data.wgsn.length} · RANK ${STATE.data.ranking.length} · XHS ${STATE.data.xhs.length} · NEWS ${STATE.data.news.length}`;
+    toast(`Loaded ${total} records — ${counts}`);
+  }catch(e){
+    progress(null);
+    toast('Load failed: ' + e.message, true);
+  }
+}
+
+// ─── TABS / CONTROLS ────────────────────────────────────
+function switchTab(el){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  $('panel-' + el.getAttribute('data-p')).classList.add('on');
+}
+
+document.querySelectorAll('#catChips .chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('#catChips .chip').forEach(x => x.classList.remove('on'));
+    c.classList.add('on');
+    STATE.category = c.getAttribute('data-cat');
+    if(STATE.loaded) renderAll();
+  });
+});
+
+['sourceSel', 'monthSel', 'weightSel'].forEach(id => {
+  const elm = $(id);
+  if(!elm) return;
+  elm.addEventListener('change', e => {
+    STATE[id.replace('Sel', '')] = e.target.value;
+    if(STATE.loaded) renderAll();
+  });
+});
+
+// ─── SEASON FILTERING ───────────────────────────────────
+// Returns true if an item belongs to the currently selected season
+function itemMatchesSeason(item, source){
+  const def = SEASON_DEFS[STATE.seasonCode];
+  if(!def) return true;
+
+  // sub-filter by month (if user picked a specific month within season)
+  if(STATE.month){
+    if(item.month && item.month !== STATE.month) return false;
+    // season-level items (no month) pass month filter
+  }
+
+  // 1순위: backend가 명시한 season_code 사용 (새 데이터 모델)
+  if(item.season_code){
+    return item.season_code === STATE.seasonCode;
+  }
+
+  // 2순위: applies_to_months 배열로 검사
+  if(Array.isArray(item.applies_to_months) && item.applies_to_months.length){
+    // 시즌의 어떤 월이라도 포함되면 매치
+    return def.months.some(m => item.applies_to_months.includes(m));
+  }
+
+  // 3순위 (legacy): Newsletter / WGSN → 파일명 기반
+  if(source === 'newsletter' || source === 'wgsn'){
+    const filename = item.filename
+                  || (item.images && item.images[0] && item.images[0].filename)
+                  || item.fileName || '';
+    if(filename){
+      const fn = filename.toUpperCase();
+      const code = STATE.seasonCode.toUpperCase();
+      const matched = fn.startsWith(code + '_')
+                   || fn.indexOf('_' + code + '_') !== -1
+                   || fn.indexOf(code) !== -1;
+      if(matched) return true;
+      const hasSeasonHint = /\d{2,4}(SS|FW)/i.test(filename);
+      if(hasSeasonHint) return false;
+    }
+  }
+
+  // 4순위: 월 기반 (IG, Xiaohongshu, Ranking)
+  if(!item.month) return true; // can't filter, let it through
+  return def.months.includes(item.month);
+}
+
+// Apply season filter to all sources, returns filtered copy
+function getSeasonFilteredData(){
+  return {
+    instagram: STATE.data.instagram.filter(it => itemMatchesSeason(it, 'instagram')),
+    wgsn:      STATE.data.wgsn.filter(it => itemMatchesSeason(it, 'wgsn')),
+    ranking:   STATE.data.ranking.filter(it => itemMatchesSeason(it, 'ranking')),
+    xhs:       STATE.data.xhs.filter(it => itemMatchesSeason(it, 'xiaohongshu')),
+    news:      STATE.data.news.filter(it => itemMatchesSeason(it, 'newsletter')),
+  };
+}
+
+// ─── RENDER ALL ─────────────────────────────────────────
+function renderAll(){
+  renderOverview();
+  renderImageBoard();
+  renderKeywords();
+}
+
+// ─── OVERVIEW ───────────────────────────────────────────
+function renderOverview(){
+  const inner = $('overviewInner');
+  if(!STATE.loaded){
+    inner.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">T</div>
+        <div class="empty-title">Load data to begin</div>
+        <div class="empty-sub">click Load Data above</div>
+      </div>`;
+    return;
+  }
+
+  // Aggregate trends from all sources (or filtered by source)
+  const trends = aggregateTrends();
+
+  // Filter by category — STRICT, case-insensitive
+  const filtered = STATE.category === 'ALL'
+    ? trends
+    : trends.filter(t => (t.category || '').toUpperCase() === STATE.category);
+
+  // Sort by mention count desc
+  filtered.sort((a, b) => b.mentions - a.mentions);
+
+  // Calculate data confidence
+  const confidence = calcConfidence();
+
+  // Period — show season label, plus optional month sub-filter
+  const def = SEASON_DEFS[STATE.seasonCode];
+  const period = STATE.month
+    ? `${def.label} · ${STATE.month}`
+    : `${def.label} (${def.months[0]} – ${def.months[def.months.length-1]})`;
+
+  let html = '';
+
+  // Confidence banner
+  html += `
+    <div class="conf-banner">
+      <div class="conf-section">
+        <div class="conf-key">Period</div>
+        <div class="conf-val">${esc(period)}</div>
+      </div>
+      <div class="conf-section">
+        <div class="conf-key">Based on</div>
+        <div class="conf-val">${confidence.activeSources}<small>of 6 sources</small></div>
+      </div>
+      <div class="conf-section">
+        <div class="conf-key">Records</div>
+        <div class="conf-val">${confidence.totalRecords.toLocaleString()}</div>
+      </div>
+      <div class="conf-section" style="flex:1">
+        <div class="conf-key">Confidence</div>
+        <div class="conf-bar"><div class="conf-bar-fill ${confidence.cls}" style="width:${confidence.pct}%"></div></div>
+      </div>
+      <div class="conf-pct">${confidence.pct}%</div>
+    </div>
+  `;
+
+  // Meta line
+  html += `
+    <div class="ov-meta">
+      <span class="ov-period">Period: <strong>${esc(period)}</strong></span>
+      <span class="ov-count">${filtered.length} trends · ${STATE.category}</span>
+    </div>
+  `;
+
+  if(!filtered.length){
+    const Dseason = getSeasonFilteredData();
+    const totalRecords = Dseason.instagram.length + Dseason.wgsn.length + Dseason.ranking.length;
+    html += `
+      <div class="empty">
+        <div class="empty-mark">∅</div>
+        <div class="empty-title">No trend signals detected</div>
+        <div class="empty-sub">${totalRecords > 0
+          ? `${totalRecords} records loaded, but no trend signal (pattern, graphic, silhouette, wash) detected — waiting for new analysis`
+          : 'try a different category or load data'}</div>
+      </div>`;
+    inner.innerHTML = html;
+    return;
+  }
+
+  // Table
+  html += `
+    <div class="table-wrap">
+      <table class="trend">
+        <thead>
+          <tr>
+            <th style="width:32px"></th>
+            <th>Trend</th>
+            <th>Trajectory</th>
+            <th>Search Pattern</th>
+            <th>TrendCast</th>
+            <th>Monthly Growth</th>
+            <th>YoY Growth</th>
+            <th class="group-tt">IG Posts</th>
+            <th class="group-tt">3M Total</th>
+            <th class="group-tt">Velocity</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.slice(0, 30).map((t, i) => renderTrendRow(t, i)).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  inner.innerHTML = html;
+}
+
+// 표시명 정리: underscore → 공백, 단어 단위 중복 제거
+function cleanTrendDisplayName(raw){
+  if(!raw) return raw;
+  // 1) Soft_knit → Soft Knit
+  let s = String(raw).replace(/_/g, ' ');
+  // 2) 단어 단위 중복 제거 (대소문자 무시)
+  //    예: "Knit Knitwear Cardigans" → "Knitwear Cardigans"
+  //        "Knit Knit Polo Shirts" → "Knit Polo Shirts"
+  const words = s.split(/\s+/).filter(Boolean);
+  const out = [];
+  const seenLower = new Set();
+  words.forEach(w => {
+    const lw = w.toLowerCase();
+    // 이미 본 단어면 스킵
+    if(seenLower.has(lw)) return;
+    // 다른 단어의 일부로 이미 들어가 있으면 스킵 (예: 'knit' vs 'knitwear')
+    const isContained = Array.from(seenLower).some(prev => prev.includes(lw) || lw.includes(prev));
+    if(isContained){
+      // 더 긴 단어가 나중에 나왔으면 이전 짧은 단어 제거하고 이걸 채택
+      const shorter = Array.from(seenLower).find(prev => lw.includes(prev) && lw !== prev);
+      if(shorter){
+        // out에서 shorter 제거
+        const idx = out.findIndex(o => o.toLowerCase() === shorter);
+        if(idx !== -1) out.splice(idx, 1);
+        seenLower.delete(shorter);
+        seenLower.add(lw);
+        out.push(w);
+      }
+      return;
+    }
+    seenLower.add(lw);
+    out.push(w);
+  });
+  // 3) 첫 글자 대문자
+  return out.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function renderTrendRow(t, i){
+  // ── Trajectory
+  const trajLabel = t.trajectory === 'acc' ? 'Accelerated Growth'
+                  : t.trajectory === 'dec' ? 'Declining'
+                  : t.trajectory === 'stable' ? 'Stable'
+                  : 'Idle';
+  const trajCls = t.trajectory;
+
+  // ── TrendCast 4분류 + low_data
+  let tcBadge;
+  if(t.trendcast === 'trendy'){
+    tcBadge = `<span class="badge trendy">Trendy</span>`;
+  } else if(t.trendcast === 'safe'){
+    tcBadge = `<span class="badge safe">Safe Bet</span>`;
+  } else if(t.trendcast === 'solid'){
+    tcBadge = `<span class="badge solid">Solid</span>`;
+  } else if(t.trendcast === 'decreasing'){
+    tcBadge = `<span class="badge decreasing">Decreasing</span>`;
+  } else if(t.trendcast === 'low_data'){
+    tcBadge = `<span class="badge low-data">Low Data</span>`;
+  } else {
+    tcBadge = `<span class="cell-num muted">—</span>`;
+  }
+
+  // ── Spark
+  const spark = t.sparkline && t.sparkline.length >= 2
+    ? renderSpark(t.sparkline, t.trajectory)
+    : `<span class="nodata">—<span class="tip">need 2+ months of data</span></span>`;
+
+  // ── Monthly Growth
+  const mg = t.monthlyGrowth !== null
+    ? `<span class="cell-pct ${t.monthlyGrowth >= 0 ? 'up' : 'down'}">${t.monthlyGrowth >= 0 ? '+' : ''}${t.monthlyGrowth}%</span>`
+    : `<span class="nodata">—<span class="tip">need 2 consecutive months</span></span>`;
+
+  // ── YoY (작년 같은 시즌 대비)
+  const priorLabel = t.priorYearCount > 0 ? `prior year: ${Math.round(t.priorYearCount)}` : 'no prior year data';
+  const yoy = t.yoy !== null
+    ? `<span class="cell-pct ${t.yoy >= 0 ? 'up' : 'down'}" title="${priorLabel}">${t.yoy >= 0 ? '+' : ''}${t.yoy}%</span>`
+    : `<span class="nodata">—<span class="tip">${priorLabel}</span></span>`;
+
+  // ── IG Posts / 3M / Velocity
+  const igCell = t.igPosts !== null
+    ? `<span class="cell-num">${fmtNum(t.igPosts)}</span>`
+    : `<span class="cell-num muted">—</span>`;
+
+  const m3 = t.posts3m !== null
+    ? `<span class="cell-num">${fmtNum(t.posts3m)}</span>`
+    : `<span class="cell-num muted">—</span>`;
+
+  const vel = t.velocity !== null
+    ? `<span class="cell-pct ${t.velocity >= 0 ? 'up' : 'down'}">${t.velocity >= 0 ? '+' : ''}${t.velocity}%</span>`
+    : `<span class="cell-num muted">—</span>`;
+
+  // ── 트렌드 이름 정리 (underscore + 단어 중복)
+  const displayName = cleanTrendDisplayName(t.name);
+
+  return `
+    <tr>
+      <td style="text-align:center;color:var(--ink-3);font-family:var(--mono);font-size:10px">${(i+1).toString().padStart(2,'0')}</td>
+      <td><div class="cell-name">${esc(displayName)}${t.hot ? '<span class="hot">●</span>' : ''}</div></td>
+      <td><span class="traj ${trajCls}">${trajLabel}</span></td>
+      <td>${spark}</td>
+      <td>${tcBadge}</td>
+      <td>${mg}</td>
+      <td>${yoy}</td>
+      <td>${igCell}</td>
+      <td>${m3}</td>
+      <td>${vel}</td>
+    </tr>
+  `;
+}
+
+function renderSpark(values, traj){
+  if(!values || values.length < 2) return '';
+  const w = 80, h = 24, pad = 2;
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = max - min || 1;
+  const step = (w - pad*2) / (values.length - 1);
+  const pts = values.map((v, i) => {
+    const x = pad + i * step;
+    const y = h - pad - ((v - min) / range) * (h - pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const d = 'M ' + pts.join(' L ');
+  const cls = traj === 'acc' ? 'up' : traj === 'dec' ? 'down' : '';
+  return `<svg class="spark ${cls}" viewBox="0 0 ${w} ${h}"><path d="${d}"/></svg>`;
+}
+
+// ─── SIGNAL AGGREGATOR (재사용) ─────────────────────────
+// 주어진 items[] 를 sub_category 로 그룹핑하고,
+// 각 그룹 안에서 trend signal 분포를 카운트
+// → Image Board와 Keyword Analysis에서 공통 사용
+function aggregateBySubcategory(items){
+  // 일반어/기본값 (트렌드 시그널 아님) — 카운트 제외
+  const GENERIC = /^(regular|standard|normal|none|null|na|n\/a|short|long|cotton|polyester|solid|crew|button)$/i;
+
+  // sub_category 별로 묶음
+  const subMap = new Map(); // sub -> {count, signals: Map<value, count>, samples: []}
+  const seenSeries = new Set();
+
+  // 시리즈 dedupe 헬퍼 (재사용)
+  const extractDate = (filename) => {
+    const m = String(filename || '').match(/(\d{4})(\d{2})(\d{2})/);
+    return m ? `${m[1]}${m[2]}${m[3]}` : '';
+  };
+
+  items.forEach(item => {
+    const sub = item.sub_category || item.subCategory1 || item.subcategory
+             || item.subCategory || item.label || 'Other';
+    if(!sub || sub === 'Other') return;
+
+    // 시리즈 dedupe
+    const account = item.account
+                 || (Array.isArray(item.images) && item.images[0] && item.images[0].account) || '';
+    const filename = item.fileName || item.filename
+                  || (Array.isArray(item.images) && item.images[0] && item.images[0].filename) || '';
+    const date = extractDate(filename);
+    const color = (Array.isArray(item.dominant_colors) && item.dominant_colors[0]) || '';
+    const sKey = `${account.toLowerCase()}_${date}_${sub.toLowerCase()}_${color.toLowerCase()}`;
+    if(date && account && seenSeries.has(sKey)) return;
+    if(date && account) seenSeries.add(sKey);
+
+    if(!subMap.has(sub)){
+      subMap.set(sub, {
+        sub,
+        category: item.category || item.mainCategory || 'OTHER',
+        count: 0,
+        signals: new Map(),  // value -> count
+        signalsByType: {     // 타입별 분리
+          pattern: new Map(),
+          graphic: new Map(),
+          wash: new Map(),
+          silhouette: new Map(),
+          neckline: new Map(),
+          sleeve: new Map(),
+          closure: new Map(),
+          color: new Map(),
+          material: new Map(),
+        },
+        samples: [],         // 이미지 샘플
+      });
+    }
+    const g = subMap.get(sub);
+    g.count++;
+
+    // 시그널 수집
+    const bump = (type, val) => {
+      if(!val) return;
+      const v = String(val).trim();
+      if(!v || GENERIC.test(v)) return;
+      const cur = g.signalsByType[type].get(v) || 0;
+      g.signalsByType[type].set(v, cur + 1);
+      const cur2 = g.signals.get(v) || 0;
+      g.signals.set(v, cur2 + 1);
+    };
+
+    bump('pattern', item.pattern);
+    bump('graphic', item.graphic);
+    bump('wash', item.wash);
+    bump('silhouette', item.silhouette || item.fit);
+    bump('neckline', item.neckline);
+    bump('sleeve', item.sleeve);
+    bump('closure', item.closure);
+    // material: distinctive 만
+    const mat = item.material
+             || (Array.isArray(item.material_hints) && item.material_hints[0]);
+    if(mat && /denim|leather|knit|tweed|velvet|silk|linen|fleece|corduroy|tulle|lace/i.test(mat)){
+      bump('material', mat);
+    }
+    // color: 첫 번째만
+    const col = (Array.isArray(item.dominant_colors) && item.dominant_colors[0]) || item.color;
+    if(col) bump('color', col);
+
+    // 이미지 샘플 수집
+    if(g.samples.length < 30){
+      if(Array.isArray(item.images)){
+        item.images.forEach(img => {
+          const u = img.thumbUrl || img.url || img.imageUrl;
+          if(u && g.samples.length < 30 && !g.samples.find(s => s.url === u)){
+            g.samples.push({
+              url: u,
+              filename: img.filename || '',
+              account: img.account || account,
+            });
+          }
+        });
+      } else if(item.imageUrl){
+        if(!g.samples.find(s => s.url === item.imageUrl)){
+          g.samples.push({
+            url: item.imageUrl,
+            filename: item.fileName || '',
+            account: item.account || '',
+          });
+        }
+      }
+    }
+  });
+
+  // Map → 정렬된 배열
+  const result = Array.from(subMap.values()).map(g => {
+    // 전체 시그널 top
+    const topSignals = Array.from(g.signals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    // 타입별 top
+    const byType = {};
+    Object.keys(g.signalsByType).forEach(type => {
+      byType[type] = Array.from(g.signalsByType[type].entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count }));
+    });
+
+    return {
+      sub: g.sub,
+      category: g.category,
+      count: g.count,
+      topSignals,
+      byType,
+      samples: g.samples,
+    };
+  });
+
+  result.sort((a, b) => b.count - a.count);
+  return result;
+}
+
+// ─── BUILD TREND DESCRIPTOR ─────────────────────────────
+// Combine sub_category with detail/silhouette/material/wash to produce
+// a specific trend name like "Wide Denim Pants" instead of just "Pants"
+function buildTrendKey(item){
+  const sub = item.sub_category || item.subCategory1 || item.subcategory || item.subCategory || item.label;
+  if(!sub) return null;
+
+  const subStr = String(sub).toLowerCase().trim();
+  // tokenize sub into a set of words so we can detect overlap word-by-word
+  const subWords = new Set(subStr.split(/\s+/).filter(Boolean));
+
+  // helper: dedupe modifier against sub words AND against earlier modifiers
+  const seen = new Set(subWords);
+  const addMod = (raw) => {
+    if(!raw) return null;
+    const m = String(raw).toLowerCase().trim();
+    if(!m) return null;
+    // skip generic non-trend values
+    if(/^(regular|standard|normal|none|null|na|n\/a|undefined)$/.test(m)) return null;
+    // remove any word that already appears in sub or in prior modifiers
+    const words = m.split(/\s+/).filter(w => w && !seen.has(w));
+    if(!words.length) return null;
+    words.forEach(w => seen.add(w));
+    return words.join(' ');
+  };
+
+  // ── TREND SIGNAL FIELDS (in priority order) ──
+  // pattern → graphic → wash → silhouette → neckline → distinctive material
+  const trendMods = [];
+  const STRONG_SIGNAL_KEYS = []; // 어떤 시그널 잡혔는지 추적
+
+  // ① pattern (Check, Stripe, Floral, Camo — 가장 강한 트렌드 시그널)
+  const pattern = item.pattern || item.graphic_type
+               || (Array.isArray(item.patterns) && item.patterns[0]);
+  if(pattern && !/^(solid|none|null)$/i.test(pattern)){
+    const p = addMod(pattern);
+    if(p){ trendMods.push(p); STRONG_SIGNAL_KEYS.push('pattern'); }
+  }
+
+  // ② graphic (Big Logo, Slogan, Numbers)
+  const graphic = item.graphic || item.graphic_print || item.print_type
+               || (Array.isArray(item.graphics) && item.graphics[0]);
+  if(graphic){
+    const g = addMod(graphic);
+    if(g){ trendMods.push(g); STRONG_SIGNAL_KEYS.push('graphic'); }
+  }
+
+  // ③ wash (Faded, Pigment Dye, Distressed — 트렌드성 가공)
+  const wash = item.wash || item.tone;
+  if(wash){
+    const w = addMod(wash);
+    if(w){ trendMods.push(w); STRONG_SIGNAL_KEYS.push('wash'); }
+  }
+
+  // ④ silhouette (Oversized, Cropped, Wide — Regular는 addMod에서 제외됨)
+  const silhouette = item.silhouette || item.fit || item.shape || item.cut;
+  if(silhouette){
+    const s = addMod(silhouette);
+    if(s){ trendMods.push(s); STRONG_SIGNAL_KEYS.push('silhouette'); }
+  }
+
+  // ⑤ neckline / sleeve (Henley, V-neck, Half-sleeve — 구조적 트렌드)
+  const neckline = item.neckline;
+  if(neckline){
+    const n = addMod(neckline);
+    if(n){ trendMods.push(n); STRONG_SIGNAL_KEYS.push('neckline'); }
+  }
+  const sleeve = item.sleeve;
+  if(sleeve && !/^(short|long)$/i.test(sleeve)){
+    // Short / Long sleeve는 너무 일반적 → 스킵
+    const sl = addMod(sleeve);
+    if(sl) trendMods.push(sl);
+  }
+
+  // ⑥ closure (Zip-up, Pullover — 후디/자켓에서 중요)
+  const closure = item.closure;
+  if(closure){
+    const c = addMod(closure);
+    if(c) trendMods.push(c);
+  }
+
+  // ⑦ distinctive material만 (Denim, Leather, Knit, Tweed)
+  const matRaw = item.material
+              || (Array.isArray(item.material_hints) && item.material_hints[0])
+              || (Array.isArray(item.ai_materials) && item.ai_materials[0]);
+  if(matRaw){
+    const m = String(matRaw).toLowerCase();
+    if(/denim|leather|knit|tweed|velvet|silk|linen|fleece|corduroy|tulle|lace/.test(m)){
+      const m4 = addMod(m);
+      if(m4) trendMods.push(m4);
+    }
+  }
+
+  // ★★ 트렌드 시그널이 1개도 없으면 → 일반 카테고리만 있는 거 → 트렌드 집계 제외
+  // 이렇게 하면 "Blouses", "T-Shirts" 같은 일반 카테고리는 트렌드로 안 잡힘
+  if(trendMods.length === 0){
+    return null;
+  }
+
+  // assemble: trend signals first, then sub
+  const parts = trendMods.concat([subStr]);
+  const name = parts.join(' ').replace(/\b\w/g, c => c.toUpperCase());
+  return {
+    key: name.toLowerCase(),
+    display: name,
+    sub,
+    signalCount: STRONG_SIGNAL_KEYS.length,
+    signals: STRONG_SIGNAL_KEYS,
+  };
+}
+
+// ─── AGGREGATE TRENDS ───────────────────────────────────
+// ─── YOY 시즌 매핑 ─────────────────────────────────────
+// 현재 시즌 → 작년 같은 시즌 코드 반환
+// 26SS → 25SS, 2526FW → 2425FW (전년도 같은 타입)
+function getPriorYearSeasonCode(seasonCode){
+  if(!seasonCode) return null;
+  // 패턴 A: "25SS" → "24SS"
+  const m1 = seasonCode.match(/^(\d{2})(SS)$/);
+  if(m1) return String(parseInt(m1[1]) - 1).padStart(2,'0') + m1[2];
+  // 패턴 B: "2526FW" → "2425FW"
+  const m2 = seasonCode.match(/^(\d{2})(\d{2})(FW)$/);
+  if(m2){
+    const y1 = parseInt(m2[1]) - 1;
+    const y2 = parseInt(m2[2]) - 1;
+    return String(y1).padStart(2,'0') + String(y2).padStart(2,'0') + m2[3];
+  }
+  return null;
+}
+
+// 전년 시즌 데이터를 모음 (currentSeason 필터 무시하고 별도로 가져옴)
+function getPriorYearData(){
+  const priorCode = getPriorYearSeasonCode(STATE.seasonCode);
+  if(!priorCode) return null;
+  const priorDef = SEASON_DEFS[priorCode];
+  if(!priorDef) return null;
+
+  const matchPrior = (item, source) => {
+    if(item.season_code === priorCode) return true;
+    if(Array.isArray(item.applies_to_months)){
+      return priorDef.months.some(m => item.applies_to_months.includes(m));
+    }
+    if(item.month) return priorDef.months.includes(item.month);
+    return false;
+  };
+
+  return {
+    code: priorCode,
+    label: priorDef.label,
+    instagram: STATE.data.instagram.filter(i => matchPrior(i, 'instagram')),
+    wgsn:      STATE.data.wgsn.filter(i => matchPrior(i, 'wgsn')),
+    ranking:   STATE.data.ranking.filter(i => matchPrior(i, 'ranking')),
+    xhs:       STATE.data.xhs.filter(i => matchPrior(i, 'xiaohongshu')),
+    news:      STATE.data.news.filter(i => matchPrior(i, 'newsletter')),
+  };
+}
+
+function aggregateTrends(){
+  const buckets = new Map();
+
+  // 현재 시즌 데이터
+  const D = getSeasonFilteredData();
+  // 전년 같은 시즌 데이터 (YoY 비교용)
+  const priorYearData = getPriorYearData();
+
+  // ── 시리즈 dedupe ──
+  const seenSeriesKeys = new Set();
+  const extractDate = (filename) => {
+    if(!filename) return '';
+    const m = String(filename).match(/(\d{4})(\d{2})(\d{2})/);
+    return m ? `${m[1]}${m[2]}${m[3]}` : '';
+  };
+  const seriesKeyOf = (item) => {
+    const account = item.account || (Array.isArray(item.images) && item.images[0] && item.images[0].account) || '';
+    const filename = item.fileName || item.filename
+                  || (Array.isArray(item.images) && item.images[0] && item.images[0].filename) || '';
+    const date = extractDate(filename);
+    const sub = item.sub_category || item.subCategory1 || '';
+    const color = (Array.isArray(item.dominant_colors) && item.dominant_colors[0]) || item.color || '';
+    return `${account.toLowerCase()}_${date}_${sub.toLowerCase()}_${color.toLowerCase()}`;
+  };
+  const dedupedIG = D.instagram.filter(item => {
+    const k = seriesKeyOf(item);
+    if(!k.trim() || k === '___' || k === '____') return true;
+    if(seenSeriesKeys.has(k)) return false;
+    seenSeriesKeys.add(k);
+    return true;
+  });
+
+  // 전년 IG도 시리즈 dedupe
+  const priorSeenKeys = new Set();
+  const dedupedPriorIG = (priorYearData ? priorYearData.instagram : []).filter(item => {
+    const k = seriesKeyOf(item);
+    if(!k.trim() || k === '___' || k === '____') return true;
+    if(priorSeenKeys.has(k)) return false;
+    priorSeenKeys.add(k);
+    return true;
+  });
+
+  // bucket에 아이템 추가 — 현재 시즌
+  const addItem = (item, source, weight = 1) => {
+    const tk = buildTrendKey(item);
+    if(!tk) return;
+    const key = tk.key;
+    if(!buckets.has(key)){
+      buckets.set(key, {
+        name: tk.display,
+        category: item.category || item.mainCategory || inferCategory(tk.display),
+        mentions: 0,
+        igPosts: 0,
+        wgsnHits: 0,
+        rankingHits: 0,
+        sources: new Set(),
+        monthBuckets: new Map(),     // month → count
+        priorYearCount: 0,           // 작년 같은 시즌 총 카운트
+        sampleImages: [],
+      });
+    }
+    const b = buckets.get(key);
+    b.mentions += weight;
+    b.sources.add(source);
+    if(source === 'instagram') b.igPosts++;
+    if(source === 'wgsn') b.wgsnHits++;
+    if(source === 'ranking') b.rankingHits++;
+    // 월별 카운팅
+    const month = item.month;
+    if(month){
+      b.monthBuckets.set(month, (b.monthBuckets.get(month) || 0) + 1);
+    } else if(Array.isArray(item.applies_to_months) && item.applies_to_months.length){
+      // 시즌 단위 데이터는 시즌 전체 월에 분산 카운트
+      const share = 1 / item.applies_to_months.length;
+      item.applies_to_months.forEach(m => {
+        b.monthBuckets.set(m, (b.monthBuckets.get(m) || 0) + share);
+      });
+    }
+    // sample images
+    if(b.sampleImages.length < 4){
+      if(Array.isArray(item.images)){
+        item.images.slice(0,2).forEach(img => {
+          const u = img.thumbUrl || img.url || img.imageUrl;
+          if(u && !b.sampleImages.includes(u)) b.sampleImages.push(u);
+        });
+      } else if(item.imageUrl){
+        if(!b.sampleImages.includes(item.imageUrl)) b.sampleImages.push(item.imageUrl);
+      }
+    }
+  };
+
+  const useSrc = (s) => STATE.source === 'all' || STATE.source === s;
+  if(useSrc('instagram')) dedupedIG.forEach(item => addItem(item, 'instagram', 1));
+  if(useSrc('wgsn'))      D.wgsn.forEach(item => addItem(item, 'wgsn', 1.5));
+  if(useSrc('ranking'))   D.ranking.forEach(item => addItem(item, 'ranking', 1.2));
+
+  // ── 전년 데이터로 priorYearCount 채우기 ──
+  if(priorYearData){
+    const tallyPrior = (item, weight = 1) => {
+      const tk = buildTrendKey(item);
+      if(!tk) return;
+      const b = buckets.get(tk.key);
+      if(b) b.priorYearCount += weight;
+    };
+    if(useSrc('instagram')) dedupedPriorIG.forEach(it => tallyPrior(it, 1));
+    if(useSrc('wgsn'))      priorYearData.wgsn.forEach(it => tallyPrior(it, 1.5));
+    if(useSrc('ranking'))   priorYearData.ranking.forEach(it => tallyPrior(it, 1.2));
+  }
+
+  // ── 트렌드 객체로 변환 + metric 계산 ──
+  const currentSeasonDef = SEASON_DEFS[STATE.seasonCode];
+  const seasonMonths = currentSeasonDef ? currentSeasonDef.months : [];
+
+  return Array.from(buckets.values()).map(b => {
+    // 월별 시계열 (시즌 월 순서대로)
+    const monthSeries = seasonMonths.map(m => Math.round(b.monthBuckets.get(m) || 0));
+    const nonZeroMonths = monthSeries.filter(v => v > 0).length;
+
+    // ── Monthly Growth: 최근 2개월 비교 ──
+    let monthlyGrowth = null;
+    let recentMonth = null;
+    let priorMonth = null;
+    for(let i = monthSeries.length - 1; i >= 1; i--){
+      if(monthSeries[i] > 0){
+        recentMonth = monthSeries[i];
+        // 직전 non-zero 월 찾기
+        for(let j = i - 1; j >= 0; j--){
+          if(monthSeries[j] > 0){ priorMonth = monthSeries[j]; break; }
+        }
+        break;
+      }
+    }
+    if(recentMonth !== null && priorMonth !== null && priorMonth > 0){
+      monthlyGrowth = Math.round(((recentMonth - priorMonth) / priorMonth) * 100);
+    }
+
+    // ── YoY Growth: 현재 시즌 합계 vs 작년 같은 시즌 합계 ──
+    let yoyGrowth = null;
+    if(b.priorYearCount > 0){
+      yoyGrowth = Math.round(((b.mentions - b.priorYearCount) / b.priorYearCount) * 100);
+    }
+
+    // ── 3M Total: 마지막 3개월 합 ──
+    const last3 = monthSeries.slice(-3);
+    const posts3m = last3.reduce((s, v) => s + v, 0) || null;
+
+    // ── Velocity: 최근 3개월 vs 그 이전 3개월 비교 ──
+    let velocity = null;
+    if(monthSeries.length >= 6){
+      const recent3 = monthSeries.slice(-3).reduce((s,v)=>s+v, 0);
+      const prior3 = monthSeries.slice(-6, -3).reduce((s,v)=>s+v, 0);
+      if(prior3 > 0){
+        velocity = Math.round(((recent3 - prior3) / prior3) * 100);
+      } else if(recent3 > 0){
+        velocity = 100;
+      }
+    } else if(monthlyGrowth !== null){
+      velocity = monthlyGrowth; // 데이터 부족 시 monthly로 대체
+    }
+
+    // ── Trajectory ──
+    let traj;
+    if(monthlyGrowth === null) traj = 'idle';
+    else if(monthlyGrowth >= 15) traj = 'acc';
+    else if(monthlyGrowth <= -15) traj = 'dec';
+    else traj = 'stable';
+
+    // ── TrendCast 4분류 ──
+    // Trendy: 급증 (monthly_growth >= +30%)
+    // Safe Bet: 꾸준 성장 (3개월+ 양의 성장 + 변동성 낮음)
+    // Solid: 변화 적음 (±15% 안)
+    // Decreasing: 하락 (monthly_growth <= -20%)
+    let trendcast = null;
+    if(b.mentions < 3 || nonZeroMonths < 2){
+      trendcast = 'low_data';
+    } else if(monthlyGrowth !== null){
+      if(monthlyGrowth >= 30) trendcast = 'trendy';
+      else if(monthlyGrowth <= -20) trendcast = 'decreasing';
+      else if(monthlyGrowth >= 5 && nonZeroMonths >= 3){
+        // 변동성 체크: 월별 표준편차 / 평균
+        const positive = monthSeries.filter(v => v > 0);
+        const mean = positive.reduce((s,v)=>s+v,0) / positive.length;
+        const variance = positive.reduce((s,v)=>s+(v-mean)*(v-mean),0) / positive.length;
+        const cv = Math.sqrt(variance) / mean;
+        trendcast = cv < 0.5 ? 'safe' : 'trendy';
+      } else {
+        trendcast = 'solid';
+      }
+    }
+
+    return {
+      name: b.name,
+      category: b.category,
+      mentions: b.mentions,
+      igPosts: b.igPosts || null,
+      posts3m: posts3m,
+      trajectory: traj,
+      sparkline: nonZeroMonths >= 2 ? monthSeries : null,
+      trendcast,
+      monthlyGrowth,
+      yoy: yoyGrowth,
+      velocity,
+      marketFlags: b.rankingHits,
+      priorYearCount: b.priorYearCount,
+      sampleImages: b.sampleImages,
+      monthBuckets: Array.from(b.monthBuckets.entries()),
+      hot: monthlyGrowth !== null && monthlyGrowth >= 50,
+    };
+  });
+}
+
+function generateMockSpark(intensity){
+  // Until real time-series, fabricate based on intensity
+  // returns null if not enough confidence
+  if(intensity < 2) return null;
+  const n = 8;
+  const out = [];
+  let v = intensity * 0.3;
+  for(let i = 0; i < n; i++){
+    v += (Math.random() - 0.3) * intensity * 0.15;
+    out.push(Math.max(0, v));
+  }
+  return out;
+}
+
+function inferCategory(name){
+  const n = (name || '').toLowerCase();
+  // BOTTOM
+  if(/skirt|pant|jean|short|trouser|legging|denim|chino|cargo|slack/.test(n)) return 'BOTTOM';
+  // OUTER
+  if(/coat|jacket|blazer|cardigan|outer|parka|trench|windbreaker|anorak|bomber|puffer/.test(n)) return 'OUTER';
+  // ONEPIECE
+  if(/dress|onepiece|jumpsuit|romper|gown|robe/.test(n)) return 'ONEPIECE';
+  // TOP (intentionally last — most generic)
+  if(/top|shirt|blouse|tee|t-shirt|tank|knit|sweater|turtleneck|camisole|hoodie|sweatshirt|polo|jersey|henley/.test(n)) return 'TOP';
+  return 'OTHER';
+}
+
+// ─── CONFIDENCE CALC ────────────────────────────────────
+function calcConfidence(){
+  const sources = ['instagram', 'wgsn', 'ranking', 'xhs', 'news', 'yoy'];
+  let pts = 0;
+  let active = 0;
+  sources.forEach(s => {
+    if(STATE.health[s] === 'full'){ pts += 20; active++; }
+    else if(STATE.health[s] === 'partial'){ pts += 10; active++; }
+  });
+  // season-filtered record count
+  const D = getSeasonFilteredData();
+  const totalRecords = D.instagram.length + D.wgsn.length + D.ranking.length + D.xhs.length + D.news.length;
+  const pct = Math.min(100, pts);
+  const cls = pct >= 70 ? '' : pct >= 40 ? 'partial' : 'low';
+  return { pct, cls, activeSources: active, totalRecords };
+}
+
+// ─── IMAGE BOARD ────────────────────────────────────────
+function renderImageBoard(){
+  const inner = $('imagesInner');
+  if(!STATE.loaded){
+    inner.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">◫</div>
+        <div class="empty-title">Load data to view images</div>
+        <div class="empty-sub">instagram only</div>
+      </div>`;
+    return;
+  }
+
+  // season-filtered IG items
+  const D = getSeasonFilteredData();
+  const items = D.instagram || [];
+
+  if(!items.length){
+    const totalIG = STATE.data.instagram.length;
+    inner.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">◫</div>
+        <div class="empty-title">No Instagram data in ${esc(SEASON_DEFS[STATE.seasonCode].label)}</div>
+        <div class="empty-sub">${totalIG > 0
+          ? `${totalIG} IG items loaded but none match this season — try another season chip`
+          : 'batch may still be processing'}</div>
+      </div>`;
+    return;
+  }
+
+  // Filter by category
+  const filtered = STATE.category === 'ALL'
+    ? items
+    : items.filter(i => {
+        const cat = (i.category || i.mainCategory || '').toUpperCase();
+        return cat === STATE.category;
+      });
+
+  // 시그널 집계 (공통 함수)
+  const groups = aggregateBySubcategory(filtered);
+
+  if(!groups.length){
+    inner.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">◫</div>
+        <div class="empty-title">No images in ${esc(STATE.category)} · ${esc(SEASON_DEFS[STATE.seasonCode].label)}</div>
+        <div class="empty-sub">try a different category or season</div>
+      </div>`;
+    return;
+  }
+
+  const totalImages = groups.reduce((s, g) => s + g.count, 0);
+
+  let html = `
+    <div class="ib-header">
+      <div class="ib-title">Image Board — ${STATE.category} · ${esc(SEASON_DEFS[STATE.seasonCode].label)}</div>
+      <div class="ib-source">Source: Instagram · ${totalImages} items · ${groups.length} sub-categories</div>
+    </div>
+    <div class="ib-groups">
+  `;
+
+  groups.forEach(g => {
+    // Top 3 signals (mode C)
+    const top3 = g.topSignals.slice(0, 3);
+    const signalsHtml = top3.length
+      ? top3.map(s => `<span class="sig-chip"><span class="sig-name">${esc(s.name)}</span><span class="sig-count">${s.count}</span></span>`).join('')
+      : '<span class="sig-empty">no trend signals yet</span>';
+
+    // Show at least 10 images, up to 24
+    const samplesToShow = g.samples.slice(0, 24);
+    const minShow = Math.max(10, samplesToShow.length);
+
+    html += `
+      <div class="ib-group">
+        <div class="ib-group-head">
+          <div class="ib-group-name-line">
+            <span class="ib-group-name">${esc(cleanTrendDisplayName(g.sub))}</span>
+            <span class="ib-group-count">${g.count}</span>
+          </div>
+          <div class="ib-signals">${signalsHtml}</div>
+        </div>
+        <div class="ib-grid">
+          ${samplesToShow.map(s => `
+            <div class="ib-tile" title="${esc(s.filename || s.account || '')}">
+              ${s.url
+                ? `<img src="${esc(s.url)}" alt="${esc(g.sub)}" loading="lazy" onerror="this.style.display='none'"/>`
+                : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-3);font-family:var(--mono);font-size:9px">no preview</div>`
+              }
+            </div>
+          `).join('')}
+          ${samplesToShow.length < 10
+            ? Array(10 - samplesToShow.length).fill('<div class="ib-tile ib-tile-empty"></div>').join('')
+            : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  inner.innerHTML = html;
+}
+
+
+// ─── KEYWORD ANALYSIS — Sub-cat Expandable (top) + Color/Material/Fit (bottom) ──
+function renderKeywords(){
+  const inner = $('keywordsInner');
+  if(!STATE.loaded){
+    inner.innerHTML = `
+      <div class="empty">
+        <div class="empty-mark">K</div>
+        <div class="empty-title">Load data to extract keywords</div>
+        <div class="empty-sub">all sources combined</div>
+      </div>`;
+    return;
+  }
+
+  // season + category filtered
+  const D = getSeasonFilteredData();
+  const allItems = [].concat(D.instagram, D.wgsn, D.ranking, D.xhs, D.news);
+  const filtered = STATE.category === 'ALL'
+    ? allItems
+    : allItems.filter(i => (i.category || i.mainCategory || '').toUpperCase() === STATE.category);
+
+  // ── Sub category 별 시그널 집계 (공통 함수)
+  const subGroups = aggregateBySubcategory(filtered);
+
+  // 전체 통계 (colors, materials, fits, ...)
+  const facets = extractFacets();
+  const totalRecords = filtered.length;
+
+  let html = `
+    <div class="kw-meta">
+      <span>${esc(SEASON_DEFS[STATE.seasonCode].label)} · ${STATE.category}</span>
+      <span>${totalRecords} records · IG ${D.instagram.length} · WGSN ${D.wgsn.length} · RANK ${D.ranking.length}</span>
+    </div>
+  `;
+
+  // ── Sub Category Expandable (맨 위) ─────────────────────
+  html += `
+    <div class="kw-card kw-card-wide" style="margin-bottom:16px">
+      <div class="kw-card-head">
+        <div class="kw-card-title">Sub-categories — click to expand signal breakdown</div>
+        <div class="kw-card-sub">${subGroups.length} categories</div>
+      </div>
+      ${subGroups.length === 0
+        ? `<div class="kw-empty">no sub-category data</div>`
+        : `<div class="subcat-list">
+            ${subGroups.slice(0, 20).map((g, i) => renderSubcatExpandable(g, i)).join('')}
+          </div>`
+      }
+    </div>
+  `;
+
+  // ── 그 아래 — Color / Material / Fit
+  html += `
+    <div class="kw-quad">
+      <div class="kw-card">
+        <div class="kw-card-head">
+          <div class="kw-card-title">Colors</div>
+          <div class="kw-card-sub">${facets.colors.length} unique</div>
+        </div>
+        ${facets.colors.length === 0
+          ? `<div class="kw-empty">no color data</div>`
+          : renderColorDonut(facets.colors)
+        }
+      </div>
+
+      <div class="kw-card">
+        <div class="kw-card-head">
+          <div class="kw-card-title">Materials</div>
+          <div class="kw-card-sub">top ${Math.min(facets.materials.length, 10)}</div>
+        </div>
+        ${facets.materials.length === 0
+          ? `<div class="kw-empty">no material data</div>`
+          : renderRankedBars(facets.materials.slice(0, 10))
+        }
+      </div>
+
+      <div class="kw-card">
+        <div class="kw-card-head">
+          <div class="kw-card-title">Fit · Silhouette</div>
+          <div class="kw-card-sub">${facets.fits.length} variants</div>
+        </div>
+        ${facets.fits.length === 0
+          ? `<div class="kw-empty">no fit data — backend needs to extract silhouette/fit</div>`
+          : renderRankedBars(facets.fits.slice(0, 10))
+        }
+      </div>
+    </div>
+  `;
+
+  inner.innerHTML = html;
+}
+
+// Sub-category expandable row
+function renderSubcatExpandable(g, idx){
+  const rank = (idx+1).toString().padStart(2,'0');
+
+  // 타입별 시그널 정리 (각 타입의 top 5)
+  const typeOrder = [
+    { key:'pattern',    label:'Pattern' },
+    { key:'graphic',    label:'Graphic' },
+    { key:'silhouette', label:'Silhouette' },
+    { key:'neckline',   label:'Neckline' },
+    { key:'sleeve',     label:'Sleeve' },
+    { key:'wash',       label:'Wash' },
+    { key:'closure',    label:'Closure' },
+    { key:'color',      label:'Color' },
+    { key:'material',   label:'Material' },
+  ];
+
+  const signalSections = typeOrder.map(t => {
+    const list = (g.byType[t.key] || []).slice(0, 5);
+    if(!list.length) return '';
+    const max = list[0].count;
+    return `
+      <div class="signal-section">
+        <div class="signal-section-head">${esc(t.label)}</div>
+        <div class="signal-section-bars">
+          ${list.map(s => `
+            <div class="signal-row">
+              <span class="signal-name">${esc(s.name)}</span>
+              <span class="signal-bar"><span class="signal-bar-fill" style="width:${Math.round(s.count/max*100)}%"></span></span>
+              <span class="signal-count">${s.count}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).filter(Boolean).join('');
+
+  // 상위 3개 시그널 미리보기 (접힘 상태에서 보임)
+  const top3Preview = g.topSignals.slice(0, 3).map(s =>
+    `<span class="sig-chip"><span class="sig-name">${esc(s.name)}</span><span class="sig-count">${s.count}</span></span>`
+  ).join('');
+
+  return `
+    <details class="subcat-expandable">
+      <summary class="subcat-summary">
+        <span class="subcat-rank">${rank}</span>
+        <span class="subcat-name">${esc(cleanTrendDisplayName(g.sub))}</span>
+        <span class="subcat-cat">${esc(g.category)}</span>
+        <span class="subcat-count">${g.count}</span>
+        <span class="subcat-preview">${top3Preview || '<span class="sig-empty">no signals</span>'}</span>
+        <span class="subcat-toggle">▾</span>
+      </summary>
+      <div class="subcat-detail">
+        ${signalSections || '<div class="kw-empty" style="padding:14px">No trend signals yet — waiting for new analysis</div>'}
+      </div>
+    </details>
+  `;
+}
+
+
+// Color donut SVG
+function renderColorDonut(colors){
+  // colors: [{name, count, hex}] sorted desc
+  const total = colors.reduce((s,c) => s + c.count, 0);
+  if(!total) return '<div class="kw-empty">no data</div>';
+
+  const r = 60, ir = 38, cx = 80, cy = 80;
+  let angle = -Math.PI / 2;
+  const arcs = [];
+  colors.slice(0, 8).forEach((c, i) => {
+    const frac = c.count / total;
+    const a2 = angle + frac * Math.PI * 2;
+    const large = (a2 - angle) > Math.PI ? 1 : 0;
+    const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+    const x2 = cx + r * Math.cos(a2),    y2 = cy + r * Math.sin(a2);
+    const x3 = cx + ir * Math.cos(a2),   y3 = cy + ir * Math.sin(a2);
+    const x4 = cx + ir * Math.cos(angle),y4 = cy + ir * Math.sin(angle);
+    arcs.push({
+      d: `M${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} L${x3.toFixed(2)},${y3.toFixed(2)} A${ir},${ir} 0 ${large} 0 ${x4.toFixed(2)},${y4.toFixed(2)} Z`,
+      hex: c.hex,
+      name: c.name,
+      pct: Math.round(frac * 100),
+      count: c.count,
+    });
+    angle = a2;
+  });
+
+  const legend = arcs.map(a => `
+    <div class="legend-row">
+      <span class="legend-sw" style="background:${esc(a.hex)}"></span>
+      <span class="legend-name">${esc(a.name)}</span>
+      <span class="legend-val">${a.count} · ${a.pct}%</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="donut-wrap">
+      <svg viewBox="0 0 160 160" class="donut">
+        ${arcs.map(a => `<path d="${a.d}" fill="${esc(a.hex)}" stroke="#fff" stroke-width="1"/>`).join('')}
+        <text x="80" y="78" text-anchor="middle" class="donut-total">${total}</text>
+        <text x="80" y="94" text-anchor="middle" class="donut-label">items</text>
+      </svg>
+      <div class="legend">${legend}</div>
+    </div>
+  `;
+}
+
+// Ranked bars (for materials, fits)
+function renderRankedBars(items){
+  const max = items[0] ? items[0].count : 1;
+  return `
+    <div class="kw-list">
+      ${items.map((k, i) => `
+        <div class="kw-row">
+          <span class="kw-rank">${(i+1).toString().padStart(2,'0')}</span>
+          <span class="kw-name">${esc(k.name)}</span>
+          <span class="kw-bar"><span class="kw-bar-fill" style="width:${Math.round(k.count / max * 100)}%"></span></span>
+          <span class="kw-count">${k.count}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// Sub-category table
+function renderSubcatTable(items){
+  const max = items[0] ? items[0].count : 1;
+  return `
+    <table class="subcat-table">
+      <thead>
+        <tr>
+          <th style="width:32px">#</th>
+          <th>Sub-category</th>
+          <th style="width:80px">Category</th>
+          <th style="width:80px;text-align:right">Count</th>
+          <th style="width:90px">IG · WGSN · RANK</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map((k, i) => `
+          <tr>
+            <td class="kw-rank">${(i+1).toString().padStart(2,'0')}</td>
+            <td class="kw-name">${esc(k.name)}</td>
+            <td class="kw-cat">${esc(k.category || '—')}</td>
+            <td class="kw-count">${k.count}</td>
+            <td class="kw-src">
+              <span class="src-tag ig" title="Instagram">${k.bySrc.instagram || 0}</span>
+              <span class="src-tag wgsn" title="WGSN">${k.bySrc.wgsn || 0}</span>
+              <span class="src-tag rank" title="Ranking">${k.bySrc.ranking || 0}</span>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// Extract facets from all sources — colors, materials, fits, sub-categories
+function extractFacets(){
+  const D = getSeasonFilteredData();
+
+  // category filter
+  const matchCat = (it) => {
+    if(STATE.category === 'ALL') return true;
+    const c = (it.category || it.mainCategory || '').toUpperCase();
+    return c === STATE.category;
+  };
+
+  const colorMap = new Map();    // name -> {count, hex}
+  const materialMap = new Map(); // name -> count
+  const fitMap = new Map();      // name -> count
+  const subcatMap = new Map();   // name -> {count, category, bySrc:{}}
+
+  const addColor = (raw) => {
+    if(!raw) return;
+    const list = Array.isArray(raw) ? raw : [raw];
+    list.forEach(c => {
+      if(!c) return;
+      // c can be string "navy" or object {name:'navy',hex:'#000080'}
+      let name, hex;
+      if(typeof c === 'object'){
+        name = (c.name || c.color || c.label || '').toLowerCase().trim();
+        hex = c.hex || c.code || guessHex(name);
+      } else {
+        name = String(c).toLowerCase().trim();
+        hex = guessHex(name);
+      }
+      if(!name) return;
+      // normalize variations
+      name = name.replace(/[\-_]+/g, ' ');
+      const cur = colorMap.get(name) || { count: 0, hex };
+      cur.count++;
+      if(hex && !cur.hex) cur.hex = hex;
+      colorMap.set(name, cur);
+    });
+  };
+
+  const addMat = (raw) => {
+    if(!raw) return;
+    const list = Array.isArray(raw) ? raw : [raw];
+    list.forEach(m => {
+      if(!m) return;
+      const name = String(m).toLowerCase().trim().replace(/[\-_]+/g, ' ');
+      if(!name) return;
+      materialMap.set(name, (materialMap.get(name) || 0) + 1);
+    });
+  };
+
+  const addFit = (raw) => {
+    if(!raw) return;
+    const list = Array.isArray(raw) ? raw : [raw];
+    list.forEach(f => {
+      if(!f) return;
+      const name = String(f).toLowerCase().trim().replace(/[\-_]+/g, ' ');
+      if(!name) return;
+      fitMap.set(name, (fitMap.get(name) || 0) + 1);
+    });
+  };
+
+  const addSub = (raw, category, source) => {
+    if(!raw) return;
+    const name = String(raw).toLowerCase().trim().replace(/[\-_]+/g, ' ');
+    if(!name) return;
+    const cur = subcatMap.get(name) || { count: 0, category: category || '', bySrc: {} };
+    cur.count++;
+    cur.bySrc[source] = (cur.bySrc[source] || 0) + 1;
+    if(category && !cur.category) cur.category = category;
+    subcatMap.set(name, cur);
+  };
+
+  // Process Instagram
+  D.instagram.filter(matchCat).forEach(it => {
+    addColor(it.color || it.dominant_colors || it.ai_colors || it.colors);
+    addMat(it.material || it.material_hints || it.ai_materials);
+    addFit(it.silhouette || it.fit || it.shape || it.cut);
+    addSub(it.sub_category || it.subCategory1, it.category, 'instagram');
+  });
+
+  // Process WGSN
+  D.wgsn.filter(matchCat).forEach(it => {
+    addColor(it.color || it.dominant_colors || it.colors);
+    addMat(it.material || it.material_hints || it.materials);
+    addFit(it.silhouette || it.fit);
+    addSub(it.sub_category || it.trend || it.name, it.category, 'wgsn');
+  });
+
+  // Process Ranking
+  D.ranking.filter(matchCat).forEach(it => {
+    addColor(it.color || it.colors);
+    addMat(it.material || it.materials);
+    addFit(it.silhouette || it.fit);
+    addSub(it.sub_category || it.subCategory || it.itemName, it.category, 'ranking');
+  });
+
+  // Xiaohongshu + News
+  D.xhs.filter(matchCat).forEach(it => {
+    addColor(it.color || it.dominant_colors);
+    addMat(it.material || it.material_hints);
+    addFit(it.silhouette || it.fit);
+    addSub(it.sub_category || it.subCategory1, it.category, 'xhs');
+  });
+  D.news.filter(matchCat).forEach(it => {
+    addColor(it.color || it.dominant_colors);
+    addMat(it.material);
+    addFit(it.silhouette);
+    addSub(it.sub_category || it.trend, it.category, 'news');
+  });
+
+  // Convert to sorted arrays
+  const colors = Array.from(colorMap.entries())
+    .map(([name, v]) => ({ name, count: v.count, hex: v.hex || guessHex(name) }))
+    .sort((a,b) => b.count - a.count);
+  const materials = Array.from(materialMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a,b) => b.count - a.count);
+  const fits = Array.from(fitMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a,b) => b.count - a.count);
+  const subcats = Array.from(subcatMap.entries())
+    .map(([name, v]) => ({ name, count: v.count, category: v.category, bySrc: v.bySrc }))
+    .sort((a,b) => b.count - a.count);
+
+  return { colors, materials, fits, subcats };
+}
+
+// Map a color name to an approximate hex if not provided
+function guessHex(name){
+  const n = (name || '').toLowerCase().trim();
+  const MAP = {
+    'black':'#1a1a1a', 'white':'#f5f5f0', 'ivory':'#f5f0e6', 'cream':'#f0e9d2',
+    'beige':'#d4c5a9', 'tan':'#c9a978', 'brown':'#7a4f2a', 'camel':'#b88a4e',
+    'navy':'#0f1d3d', 'blue':'#2e5cb8', 'sky blue':'#7eb9e4', 'powder blue':'#b4d3e3',
+    'denim':'#4a6f9c', 'light wash':'#9bb3cf', 'dark wash':'#2c4561',
+    'red':'#b8312f', 'wine':'#6e1f2a', 'pink':'#e4a8b5', 'rose':'#c97386',
+    'green':'#4a7048', 'olive':'#6b6b3a', 'sage':'#a3b09a', 'forest':'#2d4a2b',
+    'yellow':'#d9b94c', 'mustard':'#b8902e', 'butter':'#f0d97d', 'gold':'#b8932e',
+    'orange':'#c66832', 'rust':'#9c4a2a', 'terracotta':'#a85c3d',
+    'gray':'#8a8a8a', 'grey':'#8a8a8a', 'charcoal':'#3a3a3a', 'silver':'#bcbcbc',
+    'purple':'#6b3a8a', 'lavender':'#b8a8d4', 'plum':'#5a2e4e',
+    'multicolor':'#aa6688', 'print':'#aa6688', 'pattern':'#aa6688',
+  };
+  // exact match first
+  if(MAP[n]) return MAP[n];
+  // partial match
+  const keys = Object.keys(MAP);
+  for(const k of keys){
+    if(n.includes(k)) return MAP[k];
+  }
+  // default
+  return '#8a8278';
+}
+
+// ─── HELPERS ────────────────────────────────────────────
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fmtNum(n){
+  if(n == null) return '—';
+  if(n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if(n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
+// Initialize health display
+renderHealth();
+</script>
+<style>
+  /* ── Proposal tab ── */
+  .pp-ctrl{display:flex;align-items:center;gap:18px;padding:12px 0 16px;border-bottom:.5px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
+  .pp-grp{display:flex;align-items:center;gap:7px}
+  .pp-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+  .pp-num{width:42px;height:26px;border:.5px solid var(--line);background:var(--bg-card);text-align:center;font-family:var(--mono);font-size:11px;border-radius:2px}
+  .pp-banner{display:flex;align-items:baseline;gap:18px;padding-bottom:14px;margin-bottom:16px;border-bottom:.5px solid var(--line);flex-wrap:wrap}
+  .pp-season{font-family:var(--serif);font-size:15px;font-weight:600;letter-spacing:.02em}
+  .pp-seasontag{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-left:7px}
+  .pp-note{font-family:var(--mono);font-size:10px;color:var(--ink-3);letter-spacing:.04em}
+  .pp-legend{display:flex;gap:14px;margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+  .pp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .pp-d-hot{background:#2D7BFF;box-shadow:0 0 8px rgba(45,123,255,.7)} .pp-d-on{background:#00E6A8;box-shadow:0 0 8px rgba(0,230,168,.7)} .pp-d-fade{background:#FFB020;box-shadow:0 0 8px rgba(255,176,32,.6)}
+  .pp-light{display:inline-block;width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+  .pp-cat{background:var(--bg-card);border:.5px solid var(--line);border-radius:4px;margin-bottom:16px;overflow:hidden}
+  .pp-cat-head{display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:.5px solid var(--line-soft);background:#fbfaf7}
+  .pp-cat-name{font-family:var(--serif);font-size:18px;font-weight:500}
+  .pp-cat-meta{font-family:var(--mono);font-size:10px;color:var(--ink-3)}
+  .pp-hotrow{display:flex;align-items:center;gap:10px;padding:10px 18px;background:#fbeeec;border-bottom:.5px solid var(--line-soft);flex-wrap:wrap}
+  .pp-hotlbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:500}
+  #proposalInner table{width:100%;border-collapse:collapse}
+  #proposalInner th{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:9px 18px;border-bottom:.5px solid var(--line-soft);font-weight:400}
+  #proposalInner td{padding:10px 18px;border-bottom:.5px solid var(--line-soft);vertical-align:middle}
+  #proposalInner tr:last-child td{border-bottom:none}
+  #proposalInner tr.wgsn td{background:#fcf3ef}
+  .pp-item{font-size:13px;font-weight:500;color:var(--ink)}
+  .pp-bar{position:relative;height:6px;background:var(--bg-soft);border-radius:3px;width:84px;display:inline-block;vertical-align:middle;margin-right:7px}
+  .pp-bar>span{position:absolute;left:0;top:0;height:100%;border-radius:3px}
+  .pp-bar.a>span{background:var(--good);opacity:.6}.pp-bar.s>span{background:var(--accent);opacity:.8}
+  .pp-pct{font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+  .pp-chips{display:flex;flex-wrap:wrap;gap:4px}
+  .pp-dchip{font-family:var(--mono);font-size:10px;color:#fff;background:var(--accent);border-radius:3px;padding:2px 7px;margin-right:4px}
+  .pp-wchip{font-family:var(--mono);font-size:10px;color:#fff;background:var(--accent);border-radius:3px;padding:2px 7px;margin-right:4px}
+  .pp-dash{color:var(--ink-3);font-family:var(--mono);font-size:10px}
+  .pp-files{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;margin-bottom:6px;border-bottom:.5px dashed var(--line)}
+  .pp-file{display:inline-flex;align-items:center;gap:6px;background:var(--bg-card);border:.5px solid var(--line);border-radius:3px;padding:4px 8px;font-size:11px}
+  .pp-file b{font-weight:500;color:var(--ink)}
+  .pp-fmeta{font-family:var(--mono);font-size:9px;color:var(--ink-3)}
+  .pp-sel{height:22px;border:.5px solid var(--line);background:var(--bg-soft);font-family:var(--mono);font-size:10px;border-radius:2px}
+  .pp-rm{cursor:pointer;color:var(--ink-3);font-size:11px;padding:0 2px}
+  .pp-rm:hover{color:var(--accent)}
+  .pp-addmore{cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--ink-2);border:1px dashed var(--line);border-radius:3px;padding:4px 10px}
+  .pp-addmore:hover{border-color:var(--ink);color:var(--ink)}
+</style>
+<script>
+(function(){
+  const ACTUAL=new Set(['ranking','musinsa','instagram','xiaohongshu','xhs']);
+  const SIGNAL=new Set(['wgsn','trend_insight','newsletter','news']);
+  const SEASONS=['25SS','2526FW','26SS','2627FW','27SS','2728FW'];
+  const PROP={files:[],season:'',category:'ALL',level:'sub2',lead:2};
+  const inner=document.getElementById('proposalInner');
+  function monthToSeason(y,mo){const yy=((y%100)+100)%100;if(mo>=3&&mo<=8)return String(yy).padStart(2,'0')+'SS';if(mo>=9)return String(yy).padStart(2,'0')+String((yy+1)%100).padStart(2,'0')+'FW';return String((yy+99)%100).padStart(2,'0')+String(yy).padStart(2,'0')+'FW';}
+  function normSeason(s){s=(s||'').trim();if(/^\d{2}(SS|FW)$/.test(s)||/^\d{4}FW$/.test(s))return s;const m=/^(\d{4})-(\d{2})/.exec(s);if(m)return monthToSeason(+m[1],+m[2]);return s;}
+  function propGender(r){
+    const s=(r.source||'').toLowerCase();
+    if(s==='instagram'||s==='xhs'||s==='xiaohongshu')return (window.GENDER_OV&&window.GENDER_OV[r.dedup_hash])||'여자';
+    return (r.gender||'').trim();
+  }
+  function eachRow(cb){PROP.files.forEach(file=>file.rows.forEach(r=>{
+    const G=window.GENDER_FILTER||'ALL';
+    if(G!=='ALL'){const g=propGender(r);if(g&&g!==G)return;}
+    const lay=file.layer==='auto'?layer(r.source):file.layer;const sc=file.season||normSeason(r.season_code);cb(r,lay,sc);
+  }));}
+  function hasData(){return PROP.files.some(f=>f.rows.length);}
+  const CATMAP={'Top':'TOP','Bottom':'BOTTOM','Outer':'OUTERWEAR','Outerwear':'OUTERWEAR','Onepiece':'DRESS','One-piece':'DRESS','Dress':'DRESS','Bag':'BAG','Hat':'HAT'};
+  const CAT_ORDER=['TOP','BOTTOM','OUTERWEAR','DRESS','BAG','HAT','ACC'];
+  function normCat(c){c=(c||'').trim();return CATMAP[c]||(c?'ACC':'');}
+  function hashKey(k){return '#'+String(k).split('=').pop().toLowerCase().replace(/[^a-z0-9]+/g,'');}
+
+  function parseCSV(t){const o=[];let i=0,f='',r=[],q=false;while(i<t.length){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i+=2;continue;}q=false;i++;continue;}f+=c;i++;continue;}if(c==='"'){q=true;i++;continue;}if(c===','){r.push(f);f='';i++;continue;}if(c==='\r'){i++;continue;}if(c==='\n'){r.push(f);o.push(r);r=[];f='';i++;continue;}f+=c;i++;}if(f.length||r.length){r.push(f);o.push(r);}return o;}
+  function toObj(g){if(!g.length)return[];const h=g[0].map(x=>x.trim());return g.slice(1).filter(r=>r.length>1).map(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]!==undefined?r[i]:'');return o;});}
+  function shift(c,n){let m=/^(\d{2})(\d{2})FW$/.exec(c||'');if(m)return String(+m[1]+n).padStart(2,'0')+String(+m[2]+n).padStart(2,'0')+'FW';m=/^(\d{2})SS$/.exec(c||'');if(m)return String(+m[1]+n).padStart(2,'0')+'SS';return c||'';}
+  function layer(s){s=(s||'').toLowerCase();return ACTUAL.has(s)?'actual':SIGNAL.has(s)?'signal':'actual';}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function keysOf(detailsStr){let d={};try{d=JSON.parse(detailsStr||'{}');}catch(e){}const ks=[];for(const ax in d){(Array.isArray(d[ax])?d[ax]:[d[ax]]).forEach(v=>{if(v)ks.push(ax+'='+v);});}return ks;}
+
+  const LP=["fit","pattern","insulation","construction","surface_finish","collar","neckline","closure","sleeve_shape","decoration","waist_rise","sleeve_length","hem_length"];
+  const BASEFIX={'Short':'Short Puffer','Long':'Long Puffer','Heavy':'Heavy Puffer','Lightweight':'Light Puffer'};
+  function trendLabel(detailsStr,base){
+    let d={};try{d=JSON.parse(detailsStr||'{}');}catch(e){}
+    const bn=base.toLowerCase(),picks=[];
+    for(const ax of LP){
+      if(picks.length>=2)break;
+      if(!(ax in d))continue;
+      let v=d[ax];v=Array.isArray(v)?v[0]:v;if(!v)continue;
+      v=String(v).replace(/ Fit$/,'');
+      const vn=v.toLowerCase();
+      if(bn.includes(vn.split(' ')[0]))continue;
+      if(picks.some(p=>p.toLowerCase()===vn))continue;
+      picks.push(v);
+    }
+    return picks.length?picks.join(' ')+' '+base:base;
+  }
+
+  function build(){
+    // 1) proposal season 목록/카테고리
+    const props=new Set(),cats=new Set();
+    eachRow((r,lay,sc)=>{const cat=normCat(r.category);if(!cat)return;
+      if(sc)props.add(sc);cats.add(cat);});
+    const plist=[...props].sort();
+    if(!PROP.season)PROP.season=plist[plist.length-1]||'';
+    // 2) 선택 시즌: TREND 버킷 + WGSN 디테일맵
+    const AB=new Map();           // cat|label -> {cat,label,a,det:Map}
+    const sig={};                 // cat -> Map(detailKey -> strength)
+    const catA={};                // cat -> TREND 총합
+    const catS={};                // cat -> SIGNAL 총합
+    let hasA=false,hasS=false;
+    eachRow((r,lay,sc)=>{
+      const cat=normCat(r.category);if(!cat)return;
+      if(sc!==PROP.season)return;
+      const w=parseFloat(r.trend_strength)||0;
+      if(lay==='signal'){
+        hasS=true;catS[cat]=(catS[cat]||0)+w;
+        sig[cat]=sig[cat]||new Map();
+        keysOf(r.details).forEach(k=>sig[cat].set(k,(sig[cat].get(k)||0)+w));
+        return;
+      }
+      hasA=true;catA[cat]=(catA[cat]||0)+w;
+      let base=PROP.level==='sub2'?((r.sub2||'').trim()||(r.sub_category||'').trim()):(r.sub_category||'').trim();
+      if(!base)return;   // 빈 라벨(–) 제외
+      if((r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
+      const label=trendLabel(r.details,base);
+      const key=cat+'|'+label;
+      if(!AB.has(key))AB.set(key,{cat,label,a:0,det:new Map()});
+      const b=AB.get(key);b.a+=w;
+      keysOf(r.details).forEach(k=>b.det.set(k,(b.det.get(k)||0)+1));
+    });
+    // 3) 카테고리별 정리 + WGSN 오버레이 매칭
+    const perCat={};
+    [...cats].forEach(cat=>{
+      const buckets=[...AB.values()].filter(b=>b.cat===cat);
+      const TA=catA[cat]||1, TS=catS[cat]||1, sigMap=sig[cat]||new Map();
+      const usedSigKeys=new Set();
+      const rows=buckets.map(b=>{
+        const detKeys=[...b.det.keys()];
+        const matched=detKeys.filter(k=>sigMap.has(k));
+        matched.forEach(k=>usedSigKeys.add(k));
+        const wScore=matched.reduce((x,k)=>x+sigMap.get(k),0);
+        return {label:b.label, a:b.a, aShare:b.a/TA, det:b.det, matched, wScore, wShare:wScore/TS};
+      });
+      const av=rows.filter(r=>r.aShare>0).map(r=>r.aShare);
+      const aHi=av.length?av.reduce((x,y)=>x+y,0)/av.length:1;
+      rows.forEach(r=>{ r.status = r.wScore>0 ? (r.aShare>=aHi?'ONGOING':'HOT') : 'FADING'; });
+      rows.sort((x,y)=>y.a-x.a);
+      // TREND에 없는 WGSN 신규 예측 키
+      const hotNew=[...sigMap.entries()].filter(([k])=>!usedSigKeys.has(k)).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      perCat[cat]={rows,hotNew,hasSig:sigMap.size>0};
+    });
+    return {perCat,plist,cats:['ALL',...CAT_ORDER.filter(c=>cats.has(c))],hasA,hasS};
+  }
+
+  function render(){
+    if(!hasData())return;
+    // 사용자가 상단 SEASON 탭을 눌렀으면 그 시즌을 그대로 존중 (데이터 없으면 '없음' 표시)
+    if(typeof STATE!=='undefined'&&STATE.seasonCode){
+      PROP.season=STATE.seasonCode;
+    }else if(!PROP.season){
+      // 아직 아무 시즌도 안 정해졌을 때만, 데이터 있는 시즌으로 초기 세팅
+      const sd=new Set();eachRow((r,lay,sc)=>{if(sc)sd.add(sc);});
+      if(sd.size)PROP.season=[...sd].sort()[sd.size-1];
+    }
+    const M=build();
+    // 올린 파일 목록 + 파일별 시즌/레이어 지정
+    let fileList=`<div class="pp-files"><span class="pp-lbl">Loaded files</span>`;
+    PROP.files.forEach((f,i)=>{
+      const auto=normSeason((f.rows[0]&&f.rows[0].season_code)||'')||'?';
+      const seasonOpts=`<option value="">auto(${esc(auto)})</option>`+
+        SEASONS.map(s=>`<option value="${s}" ${f.season===s?'selected':''}>${s}</option>`).join('');
+      const layerOpts=['auto','actual','signal'].map(l=>`<option value="${l}" ${f.layer===l?'selected':''}>${l==='actual'?'TREND':l==='signal'?'SIGNAL':'auto'}</option>`).join('');
+      fileList+=`<span class="pp-file"><b>${esc(f.name)}</b> <span class="pp-fmeta">${f.rows.length}행</span>
+        <select class="pp-sel" data-fseason="${i}">${seasonOpts}</select>
+        <select class="pp-sel" data-flayer="${i}">${layerOpts}</select>
+        <span class="pp-rm" data-frm="${i}" title="제거">✕</span></span>`;
+    });
+    fileList+=`<label class="pp-addmore">+ CSV 추가<input type="file" id="csvFileMore" accept=".csv" multiple style="display:none"></label></div>`;
+    const catChips=M.cats.map(c=>`<span class="chip ${c===PROP.category?'on':''}" data-pp="cat" data-v="${c}">${c}</span>`).join('');
+    let html=fileList+`<div class="pp-ctrl">
+      <div class="pp-grp"><span class="pp-lbl">Category</span>${catChips}</div>
+      <div class="pp-grp"><span class="pp-lbl">Level</span>
+        <span class="chip ${PROP.level==='sub_category'?'on':''}" data-pp="level" data-v="sub_category">sub-cat</span>
+        <span class="chip ${PROP.level==='sub2'?'on':''}" data-pp="level" data-v="sub2">sub2</span></div>
+    </div>`;
+    const srcNote=M.hasA&&M.hasS?'TREND (actual) + WGSN signal overlay':M.hasA?'TREND only — add WGSN CSV to overlay signals':'signal only';
+    html+=`<div class="pp-banner"><span class="pp-season">${esc(PROP.season||'—')}</span><span class="pp-seasontag">proposal</span>
+      <span class="pp-note">${srcNote}</span>
+      <span class="pp-legend"><span><span class="pp-dot pp-d-on"></span>ON-GOING (TREND+WGSN)</span><span><span class="pp-dot pp-d-hot"></span>HOT (WGSN new)</span><span><span class="pp-dot pp-d-fade"></span>TREND only</span></span></div>`;
+    const allCats=Object.keys(M.perCat).filter(c=>M.perCat[c].rows.length);
+    function rowTr(r,maxA,maxW,catCell){
+      const dcls=r.status==='HOT'?'pp-d-hot':r.status==='ONGOING'?'pp-d-on':'pp-d-fade';
+      const lab=r.status==='ONGOING'?'ON-GOING':r.status==='HOT'?'HOT':'TREND only';
+      const wchips=r.matched.length
+        ? r.matched.slice(0,4).map(k=>`<span class="pp-wchip">${esc(hashKey(k))}</span>`).join(' ')
+        : `<span class="pp-dash">—</span>`;
+      const others=[...r.det.entries()].filter(([k])=>!r.matched.includes(k)).sort((a,b)=>b[1]-a[1]).slice(0,4);
+      return `<tr class="${r.matched.length?'wgsn':''}">
+        <td style="text-align:center"><span class="pp-light ${dcls}" title="${lab}"></span></td>
+        <td><span class="pp-item">${esc(r.label)}</span></td>
+        ${catCell?`<td><span class="pp-fmeta">${esc(r.cat)}</span></td>`:''}
+        <td><span class="pp-bar a"><span style="width:${Math.min(100,r.aShare/maxA*100)}%"></span></span><span class="pp-pct">${(r.aShare*100).toFixed(1)}%</span></td>
+        <td>${wchips}</td>
+        <td><div class="pp-chips">${others.map(d=>`<span class="pp-dchip">${esc(hashKey(d[0]))}(${d[1]})</span>`).join('')||'<span class="pp-dash">—</span>'}</div></td>
+      </tr>`;
+    }
+    const emptyMsg=`<div class="empty"><div class="empty-mark">∅</div><div class="empty-title">No TREND data for this season / category</div><div class="empty-sub">Switch the SEASON tab or category above</div></div>`;
+    if(!allCats.length){html+=emptyMsg;inner.innerHTML=html;return;}
+
+    if(PROP.category==='ALL'){
+      // 전체: 점수(TREND+SIGNAL)순 한 줄 리스트 + Category 칸
+      let all=[];allCats.forEach(c=>M.perCat[c].rows.forEach(r=>all.push(Object.assign({cat:c},r))));
+      all.sort((x,y)=>(y.a+y.wScore)-(x.a+x.wScore));
+      all=all.slice(0,40);
+      const maxA=Math.max(...all.map(r=>r.aShare),0.001),maxW=Math.max(...all.map(r=>r.wShare),0.001);
+      html+=`<div class="pp-cat"><div class="pp-cat-head"><span class="pp-cat-name">전체 트렌드</span><span class="pp-cat-meta">점수순 top ${all.length}</span></div>
+        <table><thead><tr><th style="width:40px">●</th><th>Trend</th><th style="width:88px">Category</th><th style="width:118px">TREND</th><th style="width:210px">WGSN signal match</th><th>other details</th></tr></thead><tbody>`;
+      all.forEach(r=>html+=rowTr(r,maxA,maxW,true));
+      html+=`</tbody></table></div>`;
+    } else {
+      // 특정 카테고리: 묶음 헤더 + 그 안 점수순
+      const cat=PROP.category, pc=M.perCat[cat];
+      if(!pc||!pc.rows.length){html+=emptyMsg;inner.innerHTML=html;return;}
+      const rows=pc.rows.slice(0,15);
+      const maxA=Math.max(...pc.rows.map(r=>r.aShare),0.001),maxW=Math.max(...pc.rows.map(r=>r.wShare),0.001);
+      html+=`<div class="pp-cat"><div class="pp-cat-head"><span class="pp-cat-name">${esc(cat)}</span><span class="pp-cat-meta">${pc.rows.length} trends</span></div>`;
+      if(pc.hotNew.length){
+        html+=`<div class="pp-hotrow"><span class="pp-hotlbl">WGSN new forecast (low TREND)</span>`+
+          pc.hotNew.map(([k,v])=>`<span class="pp-wchip">${esc(hashKey(k))}(${v.toFixed(0)})</span>`).join('')+`</div>`;
+      }
+      html+=`<table><thead><tr><th style="width:40px">●</th><th>Trend</th><th style="width:130px">TREND</th><th style="width:230px">WGSN signal match</th><th>other details</th></tr></thead><tbody>`;
+      rows.forEach(r=>html+=rowTr(r,maxA,maxW,false));
+      html+=`</tbody></table></div>`;
+    }
+    inner.innerHTML=html;
+  }
+
+  inner.addEventListener('click',e=>{
+    const rm=e.target.closest('[data-frm]'); if(rm){PROP.files.splice(+rm.dataset.frm,1);render();return;}
+    const c=e.target.closest('[data-pp]');if(!c)return;const t=c.dataset.pp;if(t==='season')PROP.season=c.dataset.v;if(t==='cat')PROP.category=c.dataset.v;if(t==='level')PROP.level=c.dataset.v;render();});
+  inner.addEventListener('change',e=>{
+    if(e.target.dataset.fseason!==undefined){PROP.files[+e.target.dataset.fseason].season=e.target.value;render();return;}
+    if(e.target.dataset.flayer!==undefined){PROP.files[+e.target.dataset.flayer].layer=e.target.value;render();return;}
+    if(e.target.id==='csvFileMore'){ingest(e.target.files);return;}
+  });
+
+  // Proposal 탭에선 v10 상단 Category 칩 숨김 (중복 제거)
+  const v10cat=document.getElementById('catChips'), v10grp=v10cat?v10cat.closest('.ctrl-group'):null;
+  function syncBar(){const on=document.getElementById('panel-proposal').classList.contains('on');if(v10grp)v10grp.style.display=on?'none':'';}
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setTimeout(syncBar,0)));
+  syncBar();
+  // 위 SEASON 탭이 시즌을 통제 — 누르면 Proposal 갱신
+  document.querySelectorAll('#seasonChips .chip').forEach(c=>c.addEventListener('click',()=>setTimeout(()=>{if(hasData())render();},0)));
+
+  function ingest(files){
+    let pending=files.length;if(!pending)return;
+    [...files].forEach(f=>{const r=new FileReader();r.onload=()=>{
+      try{PROP.files.push({name:f.name,rows:toObj(parseCSV(r.result)),season:'',layer:'auto'});}catch(err){console.error(err);}
+      if(--pending===0){const tab=document.querySelector('.tab[data-p="proposal"]');if(tab)tab.click();render();}
+    };r.readAsText(f,'utf-8');});
+  }
+  const fi=document.getElementById('csvFile');
+  if(fi)fi.addEventListener('change',e=>ingest(e.target.files));
+  window.PROP_RENDER=function(){if(hasData())render();};
+})();
+</script>
+
+<style>
+  /* ── v12 Overview / Trend Graph ── */
+  #overviewInner .ov-head,#trendgraphInner .tg-head{font-family:var(--serif);font-size:21px;font-weight:300;letter-spacing:-.01em;margin:4px 0 2px}
+  #overviewInner .ov-sub,#trendgraphInner .tg-sub{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-bottom:16px}
+  .ovt{width:100%;border-collapse:collapse;background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .ovt th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-weight:400;background:var(--bg-soft)}
+  .ovt td{padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  .ovt tr:last-child td{border-bottom:none}
+  .ovt tr:hover td{background:#fafafa}
+  .ovt .rk{font-family:var(--mono);font-size:9px;color:var(--ink-3)}
+  .ovt .tn{font-family:var(--serif);font-size:13px;font-weight:500}
+  #overviewInner .ov-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+  #overviewInner .ov-keys{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:6px}
+  #overviewInner .ovk{font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+  #overviewInner .ovk-ax{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-right:5px}
+  #overviewInner .ovk b{color:var(--accent);font-weight:600}
+  #overviewInner .ov-cam{font-size:10px;color:var(--ink-3);margin-left:4px}
+  #overviewInner .ovx{display:flex;gap:34px;padding:8px 0 12px;flex-wrap:wrap}
+  #overviewInner .ovx-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--ink-3);display:block;margin-bottom:6px}
+  #overviewInner .ovx-row{display:flex;gap:8px}
+  #overviewInner .ovx-ph img{width:88px;height:117px;object-fit:cover;border-radius:6px;border:.5px solid var(--line)}
+  #imagesInner .ib-tabs{display:flex;gap:6px;margin-bottom:12px}
+  #imagesInner .ib-tab{font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:7px 16px;border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--ink-2)}
+  #imagesInner .ib-tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  #imagesInner .ib-del{position:absolute;top:5px;left:5px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:11px;cursor:pointer;line-height:1;backdrop-filter:blur(2px)}
+  #imagesInner .ib-del:hover{background:#c0392b}
+  #imagesInner .ib-x{opacity:.32;filter:grayscale(1)}
+  #imagesInner .ib-x .ib-del{background:#2d6e4f}
+  #imagesInner .ib-edit{display:flex;flex-direction:column;gap:2px;margin:3px 0}
+  #imagesInner .ib-sel{font-family:var(--mono);font-size:8px;padding:2px 3px;border:.5px solid var(--line);border-radius:4px;background:#fff;color:var(--ink-2);max-width:100%}
+  #imagesInner .ib-apply{font-family:var(--mono);font-size:8px;padding:3px 0;border:none;border-radius:4px;background:var(--accent);color:#fff;cursor:pointer;margin-top:1px}
+  #imagesInner .ib-btn2{opacity:.6;font-size:10px}
+  #overviewInner .ov-levels{display:flex;align-items:center;gap:6px;margin:-6px 0 14px}
+  #overviewInner .ov-lvllbl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-right:2px}
+  #overviewInner .ov-lvl{font-family:var(--mono);font-size:10px;padding:4px 11px;border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--ink-2)}
+  #overviewInner .ov-lvl.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  #overviewInner .ov-tag{font-family:var(--mono);font-size:9px;color:#fff;background:var(--accent);border-radius:999px;padding:1px 8px}
+  .ovt .traj{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+  .ovt .cast{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:10px;margin-right:7px}
+  .ovt .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .ovt .gr{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+  .ovt .eng{font-family:var(--mono);font-size:13px}
+  .tg-cats{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 20px}
+  .tg-cat{font-family:var(--mono);font-size:11px;padding:5px 13px;border:1px solid var(--line);border-radius:4px;cursor:pointer}
+  .tg-cat.on{background:#9A7B5A;color:#fff;border-color:#9A7B5A}
+  .tg-catblock{margin:8px 0 30px;padding:20px;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);background:var(--bg-card)}
+  .tg-catname{font-family:var(--serif);font-size:18px;font-weight:500;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line-soft)}
+  .tg-catname .tg-n{font-family:var(--mono);font-size:10px;color:var(--ink-3);font-weight:400;margin-left:8px}
+  .tg-sec{margin-bottom:20px}
+  .tg-seclbl{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--ink-3);margin-bottom:10px}
+  .tg-secrow{display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+  .tg-qbars{flex:1;min-width:260px}
+  .tg-detailwrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px 28px}
+  .tg-axis{margin-bottom:8px}
+  .tg-row3 canvas,.tg-secrow canvas{display:block}
+  .tg-grid{display:grid;grid-template-columns:200px 200px 1fr;gap:28px;align-items:start}
+  .tg-pie h4,.tg-bars .axlbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px}
+  .tg-axis{margin-bottom:18px}
+  .tg-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px}
+  .tg-row .nm{width:120px;text-align:right;color:var(--ink-2);font-size:11px}
+  .tg-row .bar{height:13px;border-radius:3px;background:var(--accent)}
+  .tg-row .vv{font-family:var(--mono);font-size:10px;color:var(--ink-3)}
+</style>
+<script>
+(function(){
+  const ACTUAL=new Set(['ranking','musinsa','instagram','xiaohongshu','xhs']);
+  const SRCMETA={ranking:['#2563FF','Musinsa'],musinsa:['#2563FF','Musinsa'],
+    instagram:['#FF5E3A','Instagram'],xiaohongshu:['#FF2D78','Xiaohongshu'],xhs:['#FF2D78','Xiaohongshu'],
+    wgsn:['#00C896','WGSN'],trend_insight:['#00C896','WGSN'],newsletter:['#9B5DE5','Newsletter'],news:['#9B5DE5','News'],market_auto:['#FFB020','Market'],market:['#FFB020','Market']};
+  const FILES=[];
+  const LP=["fit","pattern","insulation","construction","surface_finish","collar","neckline","closure","sleeve_shape","decoration","waist_rise","sleeve_length","hem_length"];
+  const MAIN_AXES=["sleeve_length","neckline","pattern","fit","waist_rise"]; // 주요 축만
+  const BASEFIX={'Short':'Short Puffer','Long':'Long Puffer','Heavy':'Heavy Puffer','Lightweight':'Light Puffer'};
+  let TG_CAT=null;
+
+  function parseCSV(t){const o=[];let i=0,f='',r=[],q=false;while(i<t.length){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i+=2;continue;}q=false;i++;continue;}f+=c;i++;continue;}if(c==='"'){q=true;i++;continue;}if(c===','){r.push(f);f='';i++;continue;}if(c==='\r'){i++;continue;}if(c==='\n'){r.push(f);o.push(r);r=[];f='';i++;continue;}f+=c;i++;}if(f.length||r.length){r.push(f);o.push(r);}return o;}
+  function toObj(g){if(!g.length)return[];const h=g[0].map(x=>x.trim());return g.slice(1).filter(r=>r.length>1).map(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]!==undefined?r[i]:'');return o;});}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function srcKey(s){return (s||'').toLowerCase();}
+  function trendLabel(detailsStr,base){
+    let d={};try{d=JSON.parse(detailsStr||'{}');}catch(e){}
+    const bn=base.toLowerCase(),picks=[];
+    for(const ax of LP){if(picks.length>=2)break;if(!(ax in d))continue;let v=d[ax];v=Array.isArray(v)?v[0]:v;if(!v)continue;v=String(v).replace(/ Fit$/,'');const vn=v.toLowerCase();if(vn==='solid'||vn==='none')continue;if(bn.includes(vn.split(' ')[0]))continue;if(picks.some(p=>p.toLowerCase()===vn))continue;picks.push(v);}
+    return picks.length?picks.join(' ')+' '+base:base;
+  }
+
+  let OV_CAT='ALL', OV_LEVEL='sub2', OV_GENDER='ALL';
+  // 인스타 사진별 성별 수정 저장 (dedup_hash -> '남자'); 기본은 여자
+  window.GENDER_OV=window.GENDER_OV||{};
+  const GENDER_OV=window.GENDER_OV;
+  // 사진별 수정(제외/분류) 저장: key -> {x:true=제외, cat, sub1, sub2}
+  window.EDIT_OV=window.EDIT_OV||{};
+  const EDIT_OV=window.EDIT_OV;
+  const TAXONOMY={"Outer": {"Padding / Down": ["Long", "Heavy", "Lightweight", "Short"], "Jacket": ["Bomber / Varsity", "Blouson / Ma-1", "Leather Jacket", "Denim Jacket", "Coach Jacket / Skacket", "Woven Jacket", "Trucker / Workwear", "Blazer", "Safari Jacket / Field Jacket", "Parka", "Cardigan"], "Coat": ["Single / Double Overcoat", "Overcoat", "Trench Coat", "Duffle", "Peacoat", "Cape / Poncho"], "Active": ["Shell Jacket", "Gore-tex Jacket", "Fleece", "Track Jacket", "Windbreaker / Woven jacket", "Anorak", "Training / Track", "Zip-up Hoodie", "Ski Jacket"], "Warm-up & Heavy": ["Mustang", "Fur Jacket", "Teddy Bear Coat", "Faux Fur Coat", "Shearling Jacket", "Cardigan"], "Vest": ["Padded Vest", "Active Vest", "Utility Vest", "Fleece Vest"]}, "Top": {"Sweat / Hood": ["Hoodie", "Sweatshirts (MTM)", "Half-zip Sweat"], "T-shirts": ["Short Sleeve", "Long Sleeve", "Polo Shirts", "Henley", "Crop Top", "Rugby Shirt", "Graphic t-shirts"], "Shirts / Blouse": ["Shirts", "Blouse", "Tunic"], "Knitwear": ["Sweater / Knit Top", "Sweater Zip-up", "Vest", "Summer Knit", "Twin-set", "Polo Knit", "Turtleneck / Mock-neck"], "Tank / Bra top": ["Tank Top", "Camisole / Sleeveless", "Halter Top", "Tube Top", "Bodysuit", "Bandeau / Bustier / Corset", "Sports Bra / Bra tank"]}, "Bottom": {"Pants": ["Sweat Pants", "Baggy Pants", "Track Pants", "Low-rise pants", "Flare Pants", "Wide Pants", "Cargo Pants", "Cotton Pants", "Capri Pants", "Chino Pants", "Tapered Pants", "Skinny Pants", "Culottes", "Denim Pants", "Trousers"], "Shorts": ["Sweat Shorts", "Bermuda Shorts", "Baggy Shorts", "Track Shorts", "Culotte Shorts", "Tailored Shorts", "Boxer Shorts", "Running Shorts", "Denim Shorts"], "Skirt / Skort": ["A Line Skirt", "Asymmetrical Skirt", "Balloon / Bubble Skirt", "Cargo Skirt", "Low-rise Skirt", "Flare Skirt", "H Line Skirt", "Handkerchief Skirt", "Memaid Skirt", "Pencil Skirt", "Pleated Skirt", "Ruffle Skirt", "Slit Skirt", "Tiered Skirt", "Tulip Skirt", "Tutu Skirt", "Wrap Skirt", "Denim Skirt", "Skorts", "Other Skirts"], "Leggings": ["Biker Shorts", "Flare Leggings"]}, "Onepiece": {"Casual / Daily Dress": ["Blouson Dress", "Collar Dress", "Hoodie Dress", "Shift Dress", "Shirt / T-shirt / Tank dress", "Overalls / Jumpsuit"], "Knit": ["Sweater / Cardigan", "Crochet Dress", "Ribbed Dress"], "Feminine": ["Apron Dress", "Babydoll Dress", "Backless Dress", "Blazer Dress", "Bodycon / Sheath", "Wrap Dress", "Party / Evening / Cocktail", "Velvet / Sequin Dress"]}, "Swimwear": {"Top": ["Rash Guards", "Water t-shirt"], "Bottom": ["Long", "Shorts", "Skirt"], "One-piece": ["Monokini", "Cover Ups"], "Bikinis & Set": ["Bikini Top", "Bikini Bottom"]}, "Shoes": {"Sneakers": ["Lifestyle Sneakers", "Ballerina Shoes", "Baseball Cleats", "Running Shoes", "Low-profile", "Outdoor / Hiking Shoes", "Boxing Boots", "Football Shoes", "Cycling Shoes", "Golf Shoes", "Tennis / Court / Flat", "Slip-on", "Dunk Sneakers", "Canvas Shoes", "Basketball Shoes", "Climbing Shoes"], "Flat / Heels": ["Boat Shoes", "Dress Shoes", "Espadrilles", "Loafers", "Moccasins", "Pumps", "Slingback Shoes", "Wedge Heels"], "Sandals / Slides": ["Mary Janes", "Clogs / Mules", "Flip Flops", "Slide Sandals", "Sports & Active Sandals", "Slippers", "Gladiator Sandals", "Jelly Shoes", "Aqua Shoes"], "Boots": ["Chelsea Boots", "Riding Boots", "Chukka Boots", "Chunky Boots", "Cowboy Boots", "Lace-up Boots", "Rain Boots", "Puffer Boots", "Ugg Boots", "Ski / Snowboard Boots", "Fur-lined Shoes"]}, "Hat": {"Caps": ["Baseball Cap", "Camp Cap", "Snapback", "Mesh Cap", "Trucker Hat", "Running Cap", "Hunting Cap", "Flat Cap", "Newsboy Cap"], "Beanie / Soft": ["Beanie", "Balaclava", "Beret and Tam Hat"], "Brimmed Hats": ["Bucket Hat", "Fedora", "Sun Cap", "Bonnet"], "Seasonal": ["Trapper Hat", "Earflap / Trooper Hat", "Earmuffs", "Fur Hat"], "ACC": ["Bandana", "Hairband / Headband"]}, "Bag": {"Shoulder Bag": ["Shoulder Bag", "Hobo Bag", "Baguette", "Barrel Bag", "Moon Bag", "Boston Bag", "Bowling Bag", "Duffle / Gym Bag"], "Tote bag": ["Tote Bag", "Briefcase", "Bucket Bag", "Satchel Bag", "Eco Bag"], "Crossbody Bag": ["Messenger Bag", "Sling Bag", "Belt Bag", "Camera Bag", "Saddle Bag", "Pouch"], "Backpacks": ["Mini Backpack", "Casual Backpack", "Outdoor Backpack", "Racket Bag", "Gym Sack"], "Seasonal": ["Raffia Bag", "Net & Mesh Bag", "PVC Bag", "Padded & Quilted Bag", "Fur & Shearling Bag"]}};
+  function rowKey(r){return r.dedup_hash||r.item_keyword||'';}
+  // 수정 적용된 유효 분류 반환 (제외 여부 포함)
+  function eff(r){
+    const e=EDIT_OV[rowKey(r)]||{};
+    if(e.x)return null;  // 제외
+    return {
+      category: normCat(e.cat||r.category),       // 필터/그룹용 (TOP/OUTER...)
+      taxCat: (e.cat||(r.category||'').trim()),    // 드롭다운용 (Top/Outer...)
+      sub_category: e.sub1!==undefined?e.sub1:(r.sub_category||'').trim(),
+      sub2: e.sub2!==undefined?e.sub2:(r.sub2||'').trim()
+    };
+  }
+  function rowGender(r){
+    const sk=srcKey(r.source);
+    if(sk==='instagram'||sk==='xhs'||sk==='xiaohongshu'){
+      return GENDER_OV[rowKey(r)]||'여자';   // 인스타 기본 여자, 수정분 우선
+    }
+    return (r.gender||'').trim();             // 무신사 등은 데이터 그대로
+  }
+  function aggregate(snsOnly){
+    const SNS=new Set(['instagram','xiaohongshu','xhs']);
+    const T=new Map();
+    FILES.forEach(f=>f.rows.forEach(r=>{
+      const sk=srcKey(r.source);
+      if(snsOnly&&!SNS.has(sk))return;
+      const ef=eff(r);if(!ef)return;          // 제외된 사진
+      const cat=ef.category;if(!cat)return;
+      if(OV_CAT!=='ALL'&&cat!==OV_CAT)return;
+      if(OV_GENDER!=='ALL'){
+        const g=rowGender(r);
+        if(g&&g!==OV_GENDER)return;
+      }
+      const sub2=ef.sub2,sub1=ef.sub_category;
+      let base=OV_LEVEL==='sub_category'?(sub1||sub2):(sub2||sub1);
+      if(!base)return;                       // 빈 라벨(– ) 제외
+      if(OV_LEVEL!=='sub_category'&&(r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
+      const label=OV_LEVEL==='sub_category'?base:trendLabel(r.details,base);
+      const key=cat+'|'+label;
+      const w=parseFloat(r.trend_strength)||5;
+      if(!T.has(key))T.set(key,{cat,label,strength:0,posts:0,srcs:new Set(),thumbs:[],det:new Map(),ax:{}});
+      const o=T.get(key);o.strength+=w;o.posts+=1;o.srcs.add(sk);
+      // 축별 디테일 분포 (키 디테일 비율용)
+      const addax=(axis,val)=>{if(!val)return;const vn=String(val).toLowerCase();if(vn==='solid'||vn==='none'||vn==='regular')return;(o.ax[axis]=o.ax[axis]||new Map()).set(val,(o.ax[axis].get(val)||0)+1);};
+      // 디테일 빈도 모으기 (#해시태그용 + 축별)
+      try{const d=JSON.parse(r.details||'{}');for(const ax in d){(Array.isArray(d[ax])?d[ax]:[d[ax]]).forEach(v=>{if(!v)return;const vn=String(v).toLowerCase();if(vn==='solid'||vn==='none')return;o.det.set(v,(o.det.get(v)||0)+1);addax(ax,v);});}}catch(e){}
+      (function(){try{(JSON.parse(r.dominant_colors||'[]')||[]).slice(0,1).forEach(c=>{if(c){o.det.set(c,(o.det.get(c)||0)+1);addax('color',c);}});}catch(e){}})();
+      try{const im=JSON.parse(r.images||'[]')[0];const t=im&&(im.thumbUrl||im.localPath);if(t&&o.thumbs.length<10)o.thumbs.push(t.startsWith('data:')?t:String(t).replace(/\\\\/g,'/'));}catch(e){}
+    }));
+    // 순위: posts 많은 순 → 소스 2개+ 우선 → strength
+    return [...T.values()].sort((a,b)=>
+      (b.posts-a.posts) ||
+      ((b.srcs.size>=2)-(a.srcs.size>=2)) ||
+      (b.strength-a.strength));
+  }
+
+  // 52색 → 24 컬러군 + 실제 색 hex
+  const COLORHEX={
+    'White':['White','#F3F1EC'],'Ivory':['Cream','#EFE7D6'],'Ivory and beige':['Cream','#EFE7D6'],'Cream':['Cream','#EFE7D6'],'Eggshell':['Cream','#EFE7D6'],
+    'Beige':['Beige','#DCC6A0'],'Sand':['Beige','#DCC6A0'],'Taupe':['Taupe','#B3A491'],'Camel':['Camel','#C19A6B'],
+    'Brown':['Brown','#6B4A2F'],'Khaki':['Khaki / Olive','#6E6A3E'],'Olive':['Khaki / Olive','#6E6A3E'],
+    'Gray':['Gray','#9A9A93'],'Light gray':['Light Gray','#C9C9C2'],'Ash':['Light Gray','#C9C9C2'],'Silver':['Light Gray','#CBCBC6'],'Dark gray':['Dark Gray','#4C4C49'],'Black':['Black','#222220'],
+    'Gold':['Gold','#C7A24A'],'Copper':['Gold','#B9763F'],
+    'Green':['Green','#3F7A47'],'Light-green':['Light Green','#9BC97A'],'Mint':['Light Green','#A7D8BE'],'Lime':['Light Green','#B5D44A'],'Neon green':['Light Green','#7BE34B'],
+    'Blue':['Blue','#2D5DA8'],'Cobalt blue':['Blue','#1F5FC0'],'Navy':['Navy','#202A52'],'Indigo':['Navy','#33356E'],
+    'Sky blue':['Sky Blue','#9EC6E8'],'Light blue':['Sky Blue','#AED3EE'],'Teal':['Teal','#2A9D9A'],'Turquoise':['Teal','#3CC2BC'],
+    'Red':['Red','#C0392B'],'Burgundy':['Burgundy','#6E2233'],'Wine':['Burgundy','#5A1E2D'],
+    'Pink':['Pink','#E58AA8'],'Light pink':['Pink','#F0C2D2'],'Salmon':['Pink','#E8927E'],'Magenta':['Magenta','#C42A77'],'Neon pink':['Magenta','#E83E8C'],
+    'Peach':['Orange','#F0B07A'],'Orange':['Orange','#E0813C'],
+    'Purple':['Purple','#7E5AA8'],'Plum':['Purple','#6B3A6E'],'Violet':['Purple','#8A53C4'],'Lavender':['Lavender','#B9A7D8'],
+    'Yellow':['Yellow','#E3C13B'],'Lemon yellow':['Yellow','#EBD94F'],'Neon yellow':['Yellow','#F2E94B'],'Mustard':['Mustard','#C9962B'],
+    'Multi color':['Multi','#A89E94']
+  };
+  function colGroup(name){const m=COLORHEX[name];return m?m:[name,'#B0A8A0'];}
+  // 고정 카테고리 7개로 통일
+  const CATMAP={'Top':'TOP','Bottom':'BOTTOM','Outer':'OUTERWEAR','Outerwear':'OUTERWEAR',
+    'Onepiece':'DRESS','One-piece':'DRESS','Dress':'DRESS','Bag':'BAG','Hat':'HAT'};
+  const CAT_ORDER=['TOP','BOTTOM','OUTERWEAR','DRESS','BAG','HAT','ACC'];
+  function normCat(c){c=(c||'').trim();return CATMAP[c]||(c?'ACC':'');}
+  // sub-category 도넛: Heuritech풍 뮤트 팔레트
+  const SUBPAL=['#A8927A','#7C9885','#B98A6E','#8A7CA8','#C2A878','#6E8CA0','#A86E78','#9AA690','#C9B79C','#6E6A5A'];
+
+  function distFor(cat){
+    const sub=new Map(),color=new Map(),axes={};MAIN_AXES.forEach(a=>axes[a]=new Map());
+    FILES.forEach(f=>f.rows.forEach(r=>{
+      const ef=eff(r);if(!ef||ef.category!==cat)return;
+      if(OV_GENDER!=='ALL'){const g=rowGender(r);if(g&&g!==OV_GENDER)return;}
+      const s=ef.sub2||ef.sub_category||'Other';sub.set(s,(sub.get(s)||0)+1);
+      try{(JSON.parse(r.dominant_colors||'[]')||[]).forEach(c=>{if(c){const g=colGroup(c);color.set(g[0],{n:(color.get(g[0])?.n||0)+1,hex:g[1]});}});}catch(e){}
+      let d={};try{d=JSON.parse(r.details||'{}');}catch(e){}
+      MAIN_AXES.forEach(ax=>{if(ax in d){(Array.isArray(d[ax])?d[ax]:[d[ax]]).forEach(v=>{if(v)axes[ax].set(v,(axes[ax].get(v)||0)+1);});}});
+    }));
+    return {sub,color,axes};
+  }
+
+  function hasData(){return FILES.some(f=>f.rows.length);}
+
+  // ── Overview 표 ──
+  function renderOverview(){
+    if(!hasData())return;
+    const T=aggregate().slice(0,40);
+    const srcNames=[...loadedSources()].map(s=>(SRCMETA[s]||['',s])[1]).filter(Boolean);
+    const srcLine=srcNames.length?' · data: '+[...new Set(srcNames)].join(', '):'';
+    let h=`<div class="ov-head">Overview${OV_CAT!=='ALL'?' — '+esc(OV_CAT):''}</div><div class="ov-sub">${OV_CAT==='ALL'?'All sources combined':esc(OV_CAT)} · ${T.length} trends · engagement = posts${esc(srcLine)}</div>`;
+    h+=`<div class="ov-levels"><span class="ov-lvllbl">Level</span>
+      <span class="ov-lvl ${OV_LEVEL==='sub_category'?'on':''}" data-ovlvl="sub_category">sub-category</span>
+      <span class="ov-lvl ${OV_LEVEL==='sub2'?'on':''}" data-ovlvl="sub2">detailed</span></div>`;
+    h+=`<table class="ovt"><thead><tr><th style="width:30px"></th><th>Trend</th><th style="width:130px">Trajectory</th><th style="width:170px">Trend Cast</th><th style="width:120px">Growth Rate</th><th style="width:90px">Engagement</th><th style="width:60px">Flags</th></tr></thead><tbody>`;
+    // 트렌드별 사진 인덱스 (무신사/SNS 분리)
+    const SNS=new Set(['instagram','xiaohongshu','xhs']);
+    const photoIdx={};
+    FILES.forEach(f=>f.rows.forEach(r=>{
+      const cat=normCat(r.category);if(!cat)return;
+      if(OV_CAT!=='ALL'&&cat!==OV_CAT)return;
+      if(OV_GENDER!=='ALL'){const g=rowGender(r);if(g&&g!==OV_GENDER)return;}
+      const sub2=(r.sub2||'').trim(),sub1=(r.sub_category||'').trim();
+      let base=OV_LEVEL==='sub_category'?(sub1||sub2):(sub2||sub1);if(!base)return;
+      if(OV_LEVEL!=='sub_category'&&(r.sub_category||'').trim()==='Padding / Down'&&BASEFIX[base])base=BASEFIX[base];
+      const key=cat+'|'+(OV_LEVEL==='sub_category'?base:trendLabel(r.details,base));
+      let thumb='',purl='';try{const im=JSON.parse(r.images||'[]')[0];if(im){thumb=(im.thumbUrl||im.localPath)||'';purl=im.productUrl||'';if(thumb&&!thumb.startsWith('data:'))thumb=String(thumb).replace(/\\\\/g,'/');}}catch(e){}
+      if(!thumb)return;
+      const bucket=SNS.has(srcKey(r.source))?'sns':'musinsa';
+      (photoIdx[key]=photoIdx[key]||{musinsa:[],sns:[]})[bucket].push({thumb,purl});
+    }));
+    T.forEach((t,i)=>{
+      const cast=[...t.srcs].map(s=>{const m=SRCMETA[s]||['#888',s||'?'];return `<span class="cast"><span class="dot" style="background:${m[0]}"></span>${esc(m[1])}</span>`;}).join('');
+      const AXLBL={surface_finish:'Surface',insulation:'Fill',decoration:'Detail',collar:'Collar',neckline:'Neck',fit:'Fit',waist_rise:'Rise',sleeve_length:'Sleeve',pattern:'Pattern',closure:'Closure',color:'Color'};
+      const KEYAX=['surface_finish','insulation','decoration','collar','neckline','fit','waist_rise','sleeve_length','pattern','color'];
+      let kd=[];
+      for(const ax of KEYAX){
+        const m=t.ax[ax];if(!m||!m.size)continue;
+        const top=[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,2)
+          .map(([k,v])=>`${esc(k)} <b>${Math.round(v/t.posts*100)}%</b>`);
+        kd.push(`<span class="ovk"><span class="ovk-ax">${AXLBL[ax]||ax}</span>${top.join(' · ')}</span>`);
+        if(kd.length>=5)break;
+      }
+      const tk=t.cat+'|'+t.label;
+      const pics=photoIdx[tk]||{musinsa:[],sns:[]};
+      const hasPics=pics.musinsa.length||pics.sns.length;
+      h+=`<tr class="ov-trow" data-tk="${esc(tk)}" style="${hasPics?'cursor:pointer':''}">
+        <td class="rk">${String(i+1).padStart(2,'0')}</td>
+        <td class="tn">${esc(t.label)} ${hasPics?'<span class="ov-cam">▤</span>':''}<div class="ov-keys">${kd.join('')||'<span class="gr" style="font-size:10px">—</span>'}</div></td>
+        <td class="traj">New · accruing</td>
+        <td>${cast}</td>
+        <td class="gr">– <span style="font-size:9px">(YoY when seasons accrue)</span></td>
+        <td class="eng">${t.posts} <span style="font-size:9px;color:var(--ink-3)">posts</span></td>
+        <td class="gr">–</td></tr>`;
+      if(hasPics){
+        const cell=(arr,lbl)=>arr.length?`<div class="ovx-grp"><span class="ovx-lbl">${lbl}</span><div class="ovx-row">`+arr.slice(0,3).map(p=>`<a ${p.purl?`href="${esc(p.purl)}" target="_blank"`:''} class="ovx-ph"><img src="${esc(p.thumb)}" loading="lazy" onerror="this.style.opacity=.2"></a>`).join('')+`</div></div>`:'';
+        h+=`<tr class="ov-exp" data-exp="${esc(tk)}" style="display:none"><td></td><td colspan="6"><div class="ovx">${cell(pics.musinsa,'MUSINSA')}${cell(pics.sns,'SNS')}</div></td></tr>`;
+      }
+    });
+    h+=`</tbody></table>`;
+    document.getElementById('overviewInner').innerHTML=h;
+    document.querySelectorAll('[data-ovlvl]').forEach(el=>el.addEventListener('click',()=>{OV_LEVEL=el.getAttribute('data-ovlvl');renderOverview();}));
+    document.querySelectorAll('.ov-trow').forEach(row=>row.addEventListener('click',()=>{
+      const tk=row.getAttribute('data-tk');const exp=document.querySelector(`[data-exp="${CSS.escape(tk)}"]`);
+      if(exp)exp.style.display=exp.style.display==='none'?'':'none';
+    }));
+  }
+
+  // ── Trend Graph (ALL=전 카테고리 블록 / 특정=그 카테고리, 가로 레이아웃) ──
+  let charts=[];
+  function renderTrendGraph(){
+    if(!hasData())return;
+    const present=new Set(FILES.flatMap(f=>f.rows.map(r=>normCat(r.category)).filter(Boolean)));
+    const cats=CAT_ORDER.filter(c=>present.has(c));
+    if(!cats.length)return;
+    const show=(OV_CAT==='ALL')?cats:cats.filter(c=>c===OV_CAT);
+    let h=`<div class="tg-head">Trend Graph${OV_CAT!=='ALL'?' — '+esc(OV_CAT):''}</div><div class="tg-sub">Sub-category · color · detail distribution${OV_CAT==='ALL'?' (all categories)':''}</div>`;
+    const qbars=(entries,colorFn)=>{
+      if(!entries.length)return '<span class="gr">—</span>';
+      const max=entries[0][1];
+      return entries.map(([k,v],i)=>`<div class="tg-row"><span class="nm">${esc(k)}</span><span class="bar" style="width:${Math.max(6,v/max*150)}px;background:${colorFn?colorFn(k,i):'var(--accent)'}"></span><span class="vv">${v}</span></div>`).join('');
+    };
+    show.forEach(cat=>{
+      const D=distFor(cat);
+      const subTot=[...D.sub.values()].reduce((a,b)=>a+b,0);
+      const colTot=[...D.color.values()].reduce((a,b)=>a+b.n,0);
+      const subE=[...D.sub.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+      const colE=[...D.color.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,12).map(([k,v])=>[k,v.n,v.hex]);
+      const colHex={};colE.forEach(([k,n,hex])=>colHex[k]=hex);
+      // details 막대
+      let dbars='';
+      MAIN_AXES.forEach(ax=>{
+        const m=D.axes[ax];if(!m||!m.size)return;
+        const entries=[...m.entries()].sort((a,b)=>b[1]-a[1]);
+        dbars+=`<div class="tg-axis"><div class="axlbl">${ax.replace(/_/g,' ')}</div>${qbars(entries)}</div>`;
+      });
+      h+=`<div class="tg-catblock">
+        <div class="tg-catname">${esc(cat)} <span class="tg-n">${subTot} items</span></div>
+        <div class="tg-sec">
+          <div class="tg-seclbl">SUB-CATEGORY</div>
+          <div class="tg-secrow">
+            <canvas class="tgc" data-cat="${esc(cat)}" data-kind="sub" width="180" height="180"></canvas>
+            <div class="tg-qbars">${qbars(subE,(k,i)=>NEONPAL[i%NEONPAL.length])}</div>
+          </div>
+        </div>
+        <div class="tg-sec">
+          <div class="tg-seclbl">COLOR</div>
+          <div class="tg-secrow">
+            <canvas class="tgc" data-cat="${esc(cat)}" data-kind="color" width="180" height="180"></canvas>
+            <div class="tg-qbars">${qbars(colE.map(([k,n])=>[k,n]),k=>colHex[k]||'var(--accent)')}</div>
+          </div>
+        </div>
+        <div class="tg-sec">
+          <div class="tg-seclbl">DETAILS</div>
+          <div class="tg-detailwrap">${dbars||'<span class="gr">no detail axes</span>'}</div>
+        </div>
+      </div>`;
+    });
+    document.getElementById('trendgraphInner').innerHTML=h;
+    drawAllPies(show);
+  }
+  // 형광 팔레트 (sub-category 도넛용)
+  const NEONPAL=['#00E6A8','#2D7BFF','#FF5E3A','#B14DFF','#FFB020','#FF2D78','#19D3DA','#A0E80C','#FF7AC8','#5B8CFF'];
+  function lighten(hex,amt){
+    const m=/^#?([0-9a-f]{6})$/i.exec(hex);if(!m)return hex;const n=parseInt(m[1],16);
+    let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+    r=Math.round(r+(255-r)*amt);g=Math.round(g+(255-g)*amt);b=Math.round(b+(255-b)*amt);
+    return `rgb(${r},${g},${b})`;
+  }
+  function radialGrad(cv,hex){
+    const ctx=cv.getContext('2d');const s=cv.width;
+    const g=ctx.createRadialGradient(s*0.5,s*0.5,s*0.18,s*0.5,s*0.5,s*0.5);
+    g.addColorStop(0,lighten(hex,0.45));  // 안쪽 밝게
+    g.addColorStop(1,hex);                // 바깥 진하게 (형광)
+    return g;
+  }
+  function drawAllPies(show){
+    if(!window.Chart)return;
+    charts.forEach(c=>{try{c.destroy();}catch(e){}});charts=[];
+    const opt={responsive:false,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{enabled:true}},cutout:'52%'};
+    document.querySelectorAll('canvas.tgc').forEach(cv=>{
+      const cat=cv.getAttribute('data-cat'),kind=cv.getAttribute('data-kind');
+      const D=distFor(cat);
+      if(kind==='sub'){
+        const sub=[...D.sub.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+        const bg=sub.map((x,i)=>radialGrad(cv,NEONPAL[i%NEONPAL.length]));
+        charts.push(new Chart(cv,{type:'doughnut',data:{labels:sub.map(x=>x[0]),datasets:[{data:sub.map(x=>x[1]),backgroundColor:bg,borderWidth:2,borderColor:'#fff'}]},options:opt}));
+      }else{
+        const col=[...D.color.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,12);
+        const bg=col.map(x=>radialGrad(cv,x[1].hex));
+        charts.push(new Chart(cv,{type:'doughnut',data:{labels:col.map(x=>x[0]),datasets:[{data:col.map(x=>x[1].n),backgroundColor:bg,borderWidth:2,borderColor:'#fff'}]},options:opt}));
+      }
+    });
+  }
+
+
+  // ── SNS Trend (인스타·샤오홍슈, Overview 레이아웃 + 행 클릭 시 대표사진) ──
+  function renderSNS(){
+    if(!hasData())return;
+    const T=aggregate(true).slice(0,40);
+    const el=document.getElementById('snsInner');
+    if(!T.length){el.innerHTML=`<div class="empty"><div class="empty-mark">◐</div><div class="empty-title">SNS Trend</div><div class="empty-sub">load instagram / xiaohongshu CSV</div></div>`;return;}
+    let h=`<div class="ov-head">SNS Trend${OV_CAT!=='ALL'?' — '+esc(OV_CAT):''}</div><div class="ov-sub">Instagram · Xiaohongshu · ${T.length} trends · click a row for photos</div>`;
+    h+=`<table class="ovt"><thead><tr><th style="width:30px"></th><th>Trend</th><th style="width:90px">Category</th><th style="width:150px">Source</th><th style="width:90px">Engagement</th><th style="width:70px">Photos</th></tr></thead><tbody>`;
+    T.forEach((t,i)=>{
+      const cast=[...t.srcs].map(s=>{const m=SRCMETA[s]||['#888',s||'?'];return `<span class="cast"><span class="dot" style="background:${m[0]}"></span>${esc(m[1])}</span>`;}).join('');
+      h+=`<tr class="sns-row" data-i="${i}" style="cursor:pointer">
+        <td class="rk">${String(i+1).padStart(2,'0')}</td>
+        <td class="tn">${esc(t.label)}</td>
+        <td><span class="cast" style="font-size:10px">${esc(t.cat)}</span></td>
+        <td>${cast}</td>
+        <td class="eng">${t.posts} <span style="font-size:9px;color:var(--ink-3)">posts</span></td>
+        <td class="gr">${t.thumbs.length} ▸</td></tr>
+        <tr class="sns-photos" id="snsp-${i}" style="display:none"><td colspan="6" style="padding:0 12px 14px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">${t.thumbs.map(src=>`<img src="${esc(src)}" style="width:110px;height:140px;object-fit:cover;border-radius:6px;border:.5px solid var(--line)" loading="lazy" onerror="this.style.opacity=.25;this.alt='이미지: 로컬서버 필요'">`).join('')||'<span class="gr">no thumbnail</span>'}</div>
+        </td></tr>`;
+    });
+    h+=`</tbody></table>`;
+    el.innerHTML=h;
+    el.querySelectorAll('.sns-row').forEach(row=>row.addEventListener('click',()=>{
+      const p=document.getElementById('snsp-'+row.getAttribute('data-i'));
+      if(p)p.style.display=p.style.display==='none'?'':'none';
+    }));
+  }
+
+  function loadedSources(){
+    const s=new Set();FILES.forEach(f=>f.rows.forEach(r=>s.add(srcKey(r.source))));return s;
+  }
+  function lightHealth(){
+    const cnt={};FILES.forEach(f=>f.rows.forEach(r=>{const k=srcKey(r.source);cnt[k]=(cnt[k]||0)+1;}));
+    const map={instagram:['instagram'],wgsn:['wgsn','trend_insight'],ranking:['ranking','musinsa'],xhs:['xhs','xiaohongshu'],news:['news','newsletter'],yoy:[]};
+    const label={instagram:'Instagram',wgsn:'WGSN',ranking:'Musinsa',xhs:'Xiaohongshu',news:'Newsletter',yoy:'Year-over-Year'};
+    document.querySelectorAll('#healthBar .health-dot').forEach(d=>{
+      const key=d.getAttribute('data-src');
+      const n=(map[key]||[key]).reduce((x,k)=>x+(cnt[k]||0),0);
+      const on=n>0;
+      d.classList.toggle('full',on);d.classList.toggle('empty',!on);
+      const tip=d.querySelector('.tip');
+      if(tip)tip.textContent=`${label[key]||key} — ${on?n+' rows loaded':'not loaded'}`;
+    });
+  }
+  function renderAll(){lightHealth();renderOverview();renderTrendGraph();renderSNS();renderBoard();}
+  function ingest(files){let p=files.length;if(!p)return;[...files].forEach(f=>{const r=new FileReader();r.onload=()=>{try{FILES.push({name:f.name,rows:toObj(parseCSV(r.result))});}catch(e){console.error(e);}if(--p===0)renderAll();};r.readAsText(f,'utf-8');});}
+  const fi=document.getElementById('csvFile');if(fi)fi.addEventListener('change',e=>ingest(e.target.files));
+
+  // ── Image Board: 무신사/SNS 탭 분리, 사진별 성별 토글 ──
+  let IB_SRC='sns';   // 'sns' | 'musinsa'
+  function renderBoard(){
+    const el=document.getElementById('imagesInner');if(!el)return;
+    const SNS=new Set(['instagram','xiaohongshu','xhs']);
+    const wantSNS=IB_SRC==='sns';
+    const cards=[];
+    FILES.forEach(f=>f.rows.forEach(r=>{
+      const isSns=SNS.has(srcKey(r.source));
+      if(wantSNS!==isSns)return;
+      const cat=normCat(r.category);if(!cat)return;
+      const ef=eff(r);
+      const excluded=!ef;
+      if(OV_CAT!=='ALL'&&!excluded&&ef.category!==cat)return;  // 수정된 카테고리로 이동한 건 해당 탭에서
+      if(OV_CAT!=='ALL'&&cat!==OV_CAT&&(!ef||ef.category!==OV_CAT))return;
+      const g=rowGender(r);
+      if(OV_GENDER!=='ALL'&&g&&g!==OV_GENDER)return;
+      let thumb='',purl='';try{const im=JSON.parse(r.images||'[]')[0];if(im){thumb=(im.thumbUrl||im.localPath)||'';purl=im.productUrl||'';if(thumb&&!thumb.startsWith('data:'))thumb=String(thumb).replace(/\\\\/g,'/');}}catch(e){}
+      if(!thumb)return;
+      const curSub1=ef?ef.sub_category:(r.sub_category||'').trim();
+      const curSub2=ef?ef.sub2:(r.sub2||'').trim();
+      const curCat=ef?ef.category:cat;
+      const taxCat=ef?ef.taxCat:(r.category||'').trim();
+      const sub2=curSub2||curSub1;
+      let tags=[];try{const d=JSON.parse(r.details||'{}');for(const ax in d){(Array.isArray(d[ax])?d[ax]:[d[ax]]).forEach(v=>{if(v&&String(v).toLowerCase()!=='solid')tags.push('#'+String(v).toLowerCase().replace(/[^a-z0-9]+/g,''));});}}catch(e){}
+      (JSON.parse(r.dominant_colors||'[]')||[]).slice(0,1).forEach(c=>{if(c)tags.unshift('#'+String(c).toLowerCase().replace(/[^a-z0-9]+/g,''));});
+      cards.push({cat:curCat,thumb,purl,label:sub2,strength:parseFloat(r.trend_strength)||0,tags:tags.slice(0,5),key:rowKey(r),gender:g,sns:isSns,excluded,curCat,taxCat,curSub1,curSub2});
+    }));
+    const ovN=Object.keys(GENDER_OV).length+Object.keys(EDIT_OV).length;
+    const tabs=`<div class="ib-tabs">
+      <span class="ib-tab ${IB_SRC==='sns'?'on':''}" data-ibsrc="sns">SNS</span>
+      <span class="ib-tab ${IB_SRC==='musinsa'?'on':''}" data-ibsrc="musinsa">Musinsa</span></div>`;
+    const actions=`<span class="ib-actions"><button class="ib-btn" data-ibexportcsv>수정 반영 CSV 저장</button> <button class="ib-btn ib-btn2" data-ibexport>메모만(overrides)</button> <label class="ib-btn ib-btn2">Import<input type="file" accept=".csv" data-ibimport hidden></label></span>`;
+    const bar=wantSNS?`<div class="ib-bar">
+      <span class="ib-baret">Instagram 기본 = 여성 · 사진의 M/W로 교정 · ✕ 제외 · 드롭다운+적용으로 분류 수정 · ${ovN}건 수정됨</span>
+      ${actions}
+    </div>`:`<div class="ib-bar">
+      <span class="ib-baret">Musinsa 상품 · ✕ 제외 · 드롭다운+적용으로 분류 수정 · ${ovN}건 수정됨</span>
+      ${actions}
+    </div>`;
+    if(!cards.length){el.innerHTML=tabs+bar+`<div class="empty"><div class="empty-mark">◫</div><div class="empty-title">Image Board · ${wantSNS?'SNS':'Musinsa'}</div><div class="empty-sub">${wantSNS?'load instagram CSV with thumbnails':'load musinsa_signals.csv (top50 with images)'} · pick a category above</div></div>`;wireBoard();return;}
+    cards.sort((a,b)=>b.strength-a.strength);
+    const byCat={},order=[];
+    cards.forEach(c=>{(byCat[c.cat]=byCat[c.cat]||[]).push(c);});
+    CAT_ORDER.forEach(c=>{if(byCat[c])order.push(c);});
+    const perCat=(OV_CAT==='ALL')?12:120;
+    let h=tabs+bar+`<div class="ov-head">Image Board — ${wantSNS?'SNS':'Musinsa'}${OV_CAT!=='ALL'?' · '+esc(OV_CAT):''}${OV_GENDER!=='ALL'?' · '+(OV_GENDER==='여자'?'Women':'Men'):''}</div><div class="ov-sub">${wantSNS?'SNS photos · M/W toggle per photo':'Musinsa products · click to open'}</div>`;
+    order.forEach(c=>{
+      h+=`<div class="ib-cat">${esc(c)} <span class="ib-cn">${byCat[c].length}</span></div><div class="ib-grid">`;
+      byCat[c].slice(0,perCat).forEach(card=>{
+        const isMen=card.gender==='남자';
+        const tog=card.sns?`<div class="ib-gtog" data-ibkey="${esc(card.key)}"><span class="ib-g ${!isMen?'on':''}" data-g="여자">W</span><span class="ib-g ${isMen?'on':''}" data-g="남자">M</span></div>`:'';
+        const img=card.purl&&!card.sns?`<a href="${esc(card.purl)}" target="_blank"><img src="${esc(card.thumb)}" loading="lazy" onerror="this.style.opacity=.25"></a>`:`<img src="${esc(card.thumb)}" loading="lazy" onerror="this.style.opacity=.25">`;
+        // 카테고리/sub2 드롭다운 (공식 표)
+        const catOpts=Object.keys(TAXONOMY).map(m=>`<option ${m===card.taxCat?'selected':''}>${m}</option>`).join('');
+        const sub1List=TAXONOMY[card.taxCat]?Object.keys(TAXONOMY[card.taxCat]):[];
+        const sub1Opts='<option value="">— sub —</option>'+sub1List.map(s=>`<option ${s===card.curSub1?'selected':''}>${esc(s)}</option>`).join('');
+        const sub2List=(TAXONOMY[card.taxCat]&&TAXONOMY[card.taxCat][card.curSub1])?TAXONOMY[card.taxCat][card.curSub1]:[];
+        const sub2Opts='<option value="">— detail —</option>'+sub2List.map(s=>`<option ${s===card.curSub2?'selected':''}>${esc(s)}</option>`).join('');
+        h+=`<div class="ib-card ${card.excluded?'ib-x':''}" data-cardkey="${esc(card.key)}">
+          ${img}${tog}
+          <button class="ib-del" data-ibdel="${esc(card.key)}" title="${card.excluded?'복원':'제외'}">${card.excluded?'↺':'✕'}</button>
+          <div class="ib-lbl">${esc(card.label)}</div>
+          <div class="ib-edit">
+            <select class="ib-sel" data-ibcat="${esc(card.key)}">${catOpts}</select>
+            <select class="ib-sel" data-ibsub1="${esc(card.key)}">${sub1Opts}</select>
+            <select class="ib-sel" data-ibsub2="${esc(card.key)}">${sub2Opts}</select>
+            <button class="ib-apply" data-ibapply="${esc(card.key)}">적용</button>
+          </div>
+          <div class="ib-tags">${card.tags.map(t=>`<span class="ib-tag">${esc(t)}</span>`).join('')}</div>
+        </div>`;
+      });
+      h+=`</div>`;
+    });
+    el.innerHTML=h;wireBoard();
+  }
+  function setEdit(key,patch){
+    const e=EDIT_OV[key]||{};Object.assign(e,patch);
+    // 빈 수정이면 정리
+    if(!e.x&&e.cat===undefined&&e.sub1===undefined&&e.sub2===undefined)delete EDIT_OV[key];
+    else EDIT_OV[key]=e;
+    renderAll();if(window.PROP_RENDER)window.PROP_RENDER();
+  }
+  function wireBoard(){
+    document.querySelectorAll('.ib-tab').forEach(t=>t.addEventListener('click',()=>{IB_SRC=t.getAttribute('data-ibsrc');renderBoard();}));
+    document.querySelectorAll('.ib-gtog .ib-g').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();
+      const key=b.parentElement.getAttribute('data-ibkey');const g=b.getAttribute('data-g');
+      if(g==='여자')delete GENDER_OV[key]; else GENDER_OV[key]='남자';
+      renderAll();if(window.PROP_RENDER)window.PROP_RENDER();
+    }));
+    // ✕ 제외 / 복원
+    document.querySelectorAll('[data-ibdel]').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();const key=b.getAttribute('data-ibdel');
+      const e0=EDIT_OV[key]||{};setEdit(key,{x:!e0.x});
+    }));
+    // 카테고리 바꾸면 sub1/sub2 옵션만 로컬 갱신 (재렌더 X — 카드 안 사라짐)
+    document.querySelectorAll('[data-ibcat]').forEach(s=>s.addEventListener('change',()=>{
+      const card=s.closest('.ib-card');const m=s.value;
+      const sub1Sel=card.querySelector('[data-ibsub1]'),sub2Sel=card.querySelector('[data-ibsub2]');
+      const subs=TAXONOMY[m]?Object.keys(TAXONOMY[m]):[];
+      sub1Sel.innerHTML='<option value="">— sub —</option>'+subs.map(x=>`<option>${x}</option>`).join('');
+      sub2Sel.innerHTML='<option value="">— detail —</option>';
+    }));
+    document.querySelectorAll('[data-ibsub1]').forEach(s=>s.addEventListener('change',()=>{
+      const card=s.closest('.ib-card');const m=card.querySelector('[data-ibcat]').value,s1=s.value;
+      const sub2Sel=card.querySelector('[data-ibsub2]');
+      const leaves=(TAXONOMY[m]&&TAXONOMY[m][s1])?TAXONOMY[m][s1]:[];
+      sub2Sel.innerHTML='<option value="">— detail —</option>'+leaves.map(x=>`<option>${x}</option>`).join('');
+    }));
+    // 적용 버튼: 다 고른 뒤 한 번에 반영
+    document.querySelectorAll('[data-ibapply]').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();const card=b.closest('.ib-card');const key=b.getAttribute('data-ibapply');
+      setEdit(key,{cat:card.querySelector('[data-ibcat]').value,
+                   sub1:card.querySelector('[data-ibsub1]').value,
+                   sub2:card.querySelector('[data-ibsub2]').value});
+    }));
+    // ★ 수정 반영된 전체 CSV 저장 (제외 행 삭제 + 분류/성별 덮어쓰기)
+    const exC=document.querySelector('[data-ibexportcsv]');
+    if(exC)exC.addEventListener('click',()=>{
+      const SNS2=new Set(['instagram','xiaohongshu','xhs']);
+      const wantSNS=IB_SRC==='sns';
+      // 해당 소스 파일들 모으기
+      const srcFiles=FILES.filter(f=>f.rows.some(r=>SNS2.has(srcKey(r.source))===wantSNS));
+      // 합칠 필드 = 첫 파일 헤더
+      let fields=null;
+      const out=[];
+      FILES.forEach(f=>f.rows.forEach(r=>{
+        const isSns=SNS2.has(srcKey(r.source));
+        if(isSns!==wantSNS)return;
+        if(!fields)fields=Object.keys(r);
+        const e=EDIT_OV[rowKey(r)]||{};
+        if(e.x)return;                       // 제외 행 삭제
+        const row=Object.assign({},r);
+        if(e.cat!==undefined)row.category=e.cat;
+        if(e.sub1!==undefined)row.sub_category=e.sub1;
+        if(e.sub2!==undefined)row.sub2=e.sub2;
+        if(isSns){const g=GENDER_OV[rowKey(r)];if(g)row.gender=g;}  // 성별 교정 반영
+        out.push(row);
+      }));
+      if(!out.length){alert('내보낼 데이터가 없어요. CSV를 먼저 올려주세요.');return;}
+      const cell=v=>{v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+      let csv=fields.map(cell).join(',')+'\n';
+      out.forEach(r=>{csv+=fields.map(k=>cell(r[k])).join(',')+'\n';});
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+      a.download=(wantSNS?'instagram_signals':'musinsa_signals')+'_edited.csv';a.click();
+    });
+    // 통합 내보내기: 성별 + 수정(제외/분류)
+    const ex=document.querySelector('[data-ibexport]');
+    if(ex)ex.addEventListener('click',()=>{
+      let csv='dedup_hash,gender,excluded,category,sub_category,sub2\n';
+      const keys=new Set([...Object.keys(GENDER_OV),...Object.keys(EDIT_OV)]);
+      keys.forEach(k=>{
+        const e=EDIT_OV[k]||{};
+        const cell=v=>{v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+        csv+=[k,GENDER_OV[k]||'',e.x?'1':'',cell(e.cat||''),cell(e.sub1||''),cell(e.sub2||'')].join(',')+'\n';
+      });
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='overrides.csv';a.click();
+    });
+    const im=document.querySelector('[data-ibimport]');
+    if(im)im.addEventListener('change',e=>{const fl=e.target.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{try{
+      const rows=toObj(parseCSV(rd.result));
+      rows.forEach(r=>{
+        const k=r.dedup_hash;if(!k)return;
+        if(r.gender==='남자')GENDER_OV[k]='남자';
+        const e={};
+        if(r.excluded==='1'||r.excluded==='true')e.x=true;
+        if((r.category||'').trim())e.cat=r.category.trim();
+        if((r.sub_category||'').trim())e.sub1=r.sub_category.trim();
+        if((r.sub2||'').trim())e.sub2=r.sub2.trim();
+        if(Object.keys(e).length)EDIT_OV[k]=e;
+      });
+      renderAll();if(window.PROP_RENDER)window.PROP_RENDER();
+    }catch(err){console.error(err);}};rd.readAsText(fl,'utf-8');});
+  }
+
+  // 위 카테고리 바(catChips) → Overview/SNS/TrendGraph/Board 연동
+  document.querySelectorAll('#catChips .chip').forEach(c=>c.addEventListener('click',()=>{
+    OV_CAT=c.getAttribute('data-cat')||'ALL';
+    document.querySelectorAll('#catChips .chip').forEach(x=>x.classList.toggle('on',x===c));
+    if(hasData())renderAll();
+  }));
+  document.querySelectorAll('#genderChips .chip').forEach(c=>c.addEventListener('click',()=>{
+    OV_GENDER=c.getAttribute('data-gender')||'ALL';
+    window.GENDER_FILTER=OV_GENDER;
+    document.querySelectorAll('#genderChips .chip').forEach(x=>x.classList.toggle('on',x===c));
+    if(hasData())renderAll();
+    if(window.PROP_RENDER)window.PROP_RENDER();
+  }));
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>setTimeout(()=>{if(t.getAttribute('data-p')==='trendgraph'&&hasData())renderTrendGraph();},30)));
+})();
+</script>
+
+<style>
+  #imagesInner .ib-cat{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink-2);margin:22px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  #imagesInner .ib-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:7px}
+  #imagesInner .ib-card img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:5px;border:.5px solid var(--line)}
+  #imagesInner .ib-lbl{font-family:var(--serif);font-size:13px;margin:5px 0 3px;line-height:1.2}
+  #imagesInner .ib-tags{display:flex;flex-wrap:wrap;gap:3px}
+  #imagesInner .ib-tag{font-family:var(--mono);font-size:9px;color:#fff;background:var(--accent);border-radius:3px;padding:1px 5px}
+  #imagesInner .ib-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:10px 14px;background:var(--bg-soft);border-radius:10px}
+  #imagesInner .ib-baret{font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+  #imagesInner .ib-btn{font-family:var(--mono);font-size:10px;padding:5px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;margin-left:6px}
+  #imagesInner .ib-cn{font-family:var(--mono);font-size:9px;color:var(--ink-3)}
+  #imagesInner .ib-card{position:relative}
+  #imagesInner .ib-gtog{position:absolute;top:5px;right:5px;display:flex;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.7);background:rgba(0,0,0,.35);backdrop-filter:blur(2px)}
+  #imagesInner .ib-g{font-family:var(--mono);font-size:9px;color:#fff;padding:2px 7px;cursor:pointer}
+  #imagesInner .ib-g.on{background:#00E6A8;color:#06281f}
+</style>
+
+</body>
+</html>
